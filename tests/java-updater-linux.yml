@@ -1,0 +1,33 @@
+---
+aliases:
+  # Fedora: sudo dnf install libnotify
+  # Debian: sudo apt install notify-send
+  on-update: &on-update
+    path: notify-send
+    args: ["updated", "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"]
+  on-failure: &on-failure
+    path: notify-send
+    args: ["failed", "${env.JU_ERROR}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"]
+
+settings:
+
+installations:
+
+  # Azul
+
+  - vendor: azul
+    directory: tmp/azul/x86/8
+    type: jdk
+    architecture: i686
+    version: "8"
+    on-update: *on-update
+    on-failure: *on-failure
+
+  # Eclipse
+
+  - vendor: eclipse
+    directory: tmp/eclipse/x86_64/17
+    type: jdk
+    version: 17
+    on-update: *on-update
+    on-failure: *on-failure

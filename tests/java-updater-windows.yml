@@ -1,0 +1,34 @@
+---
+aliases:
+  # https://github.com/vaskovsky/notify-send
+  on-update: &on-update
+    path: D:\dev\src\notify-send\notify-send.exe
+    args: ["updated", "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"]
+    directory: "${env.windir}"
+  on-failure: &on-failure
+    path: D:\dev\src\notify-send\notify-send.exe
+    args: ["failed", "${env.JU_ERROR}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"]
+    directory: "${env.windir}"
+
+settings:
+
+installations:
+
+  # Azul
+
+  - vendor: azul
+    directory: tmp/azul/x86/8
+    type: jdk
+    architecture: i686
+    version: "8"
+    on-update: *on-update
+    on-failure: *on-failure
+
+  # Eclipse
+
+  - vendor: eclipse
+    directory: tmp/eclipse/x86_64/17
+    type: jdk
+    version: 17
+    on-update: *on-update
+    on-failure: *on-failure
