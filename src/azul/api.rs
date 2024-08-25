@@ -168,7 +168,7 @@ impl MetadataRequest {
     }
 }
 
-/// The response to the [MetadataRequest].
+/// The response to the [`MetadataRequest`].
 pub(super) struct MetadataResponse {
     pub(super) checksum: String,
     pub(super) url: String,

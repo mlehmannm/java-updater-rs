@@ -23,7 +23,7 @@ pub(crate) trait VarResolver: fmt::Debug {
     fn resolve_var(&self, var_name: &str) -> Result<String, VarError>;
 }
 
-/// [VarResolver] implementation for simple variables.
+/// [`VarResolver`] implementation for simple variables.
 #[derive(Debug)]
 pub(crate) struct SimpleVarResolver<'a> {
     vars: HashMap<&'a str, String>,
@@ -50,7 +50,7 @@ impl<'a> VarResolver for SimpleVarResolver<'a> {
     }
 }
 
-/// [VarResolver] implementation for environment variables.
+/// [`VarResolver`] implementation for environment variables.
 #[derive(Debug)]
 pub(crate) struct EnvVarResolver;
 

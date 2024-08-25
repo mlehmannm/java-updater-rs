@@ -139,13 +139,13 @@ mod tests {
 
     #[test]
     fn installation_version_as_uint() {
-        let config = r#"
+        let config = r"
           vendor: azul
           directory: tmp/azul/x86/8
           type: jdk
           architecture: i686
           version: 8
-        "#;
+        ";
         let config: InstallationConfig = serde_yaml::from_str(config).unwrap();
         assert_eq!("8", config.version);
     }

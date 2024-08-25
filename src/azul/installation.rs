@@ -66,7 +66,7 @@ impl Installation {
         let metadata = self.load_metadata();
         let path = PATH_COLOR.paint(self.path.to_string_lossy());
         let old_version = metadata.as_ref().map(|metadata| metadata.version.clone()).ok();
-        let old_version_str = old_version.as_ref().map(|v| v.to_string()).unwrap_or("n/a".to_string());
+        let old_version_str = old_version.as_ref().map_or("n/a".to_string(), ToString::to_string);
         let old_version_str = INFO_COLOR.paint(old_version_str);
         println!("Processing installation at {path} [{old_version_str}]");
 

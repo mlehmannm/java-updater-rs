@@ -10,6 +10,7 @@ pub(crate) struct Version {
     /// The name of the package.
     pub(crate) pkg_name: String,
     /// The version of the package.
+    #[allow(clippy::struct_field_names)]
     pub(crate) pkg_version: String,
     /// The value that `git describe` returned.
     pub(crate) git_describe: String,

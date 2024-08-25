@@ -119,13 +119,13 @@ fn format_elapsed(elapsed: Duration) -> String {
 }
 
 fn format_now(now: OffsetDateTime) -> String {
+    // define format
+    const FORMAT: &[FormatItem<'_>] = format_description!("[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory][offset_minute]");
+
     // local offset or UTC
     let offset = UtcOffset::current_local_offset();
     let offset = offset.unwrap_or(UtcOffset::UTC);
     trace!(?offset);
-
-    // define format
-    const FORMAT: &[FormatItem<'_>] = format_description!("[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory][offset_minute]");
 
     // format
     let now = now.to_offset(offset);

@@ -74,6 +74,10 @@ check *ARGS='':
 clippy *ARGS='':
     cargo {{ CHANNEL }} clippy --all-features --all-targets --no-deps --tests {{ ARGS }}
 
+# clippy (pedantic)
+clippy-pedantic *ARGS='':
+    cargo {{ CHANNEL }} clippy --all-features --all-targets --no-deps --tests -- -W clippy::pedantic -A clippy::missing_errors_doc -A clippy::wildcard_imports {{ ARGS }}
+
 # clippy in release mode (warnings will be treated as errors)
 clippy-release *ARGS='':
     cargo {{ CHANNEL }} clippy --all-features --all-targets --tests -- -D warnings {{ ARGS }}

@@ -44,7 +44,7 @@ impl Package {
 
         // check if already downloaded
         if dest.exists() && checksum::checksum(&dest)? == self.checksum {
-            return Ok(dest.to_path_buf());
+            return Ok(dest.clone());
         }
 
         // make request
@@ -69,7 +69,7 @@ impl Package {
             return Err(anyhow::Error::msg("hashes differ"));
         }
 
-        Ok(dest.to_path_buf())
+        Ok(dest.clone())
     }
 
     // Unpacks the package and replaces the old installation with the new installation.
