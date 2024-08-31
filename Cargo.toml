@@ -72,17 +72,17 @@ test-log = "0.2"
 
 [profile.release]
 # borrowed partially from https://github.com/denoland/deno/blob/master/Cargo.toml
-strip = true
 codegen-units = 1
 lto = true
 opt-level = 'z'   # optimize for size
+strip = true
 
 [package.metadata.winres]
 FileDescription = "Java Updater"
 LegalCopyright = "Copyright © 2024 Marco Lehmann-Mörz"
 OriginalFilename = "java-updater.exe"
 
-[lints.clippy]
+[lints.clippy] # uncomment from time to time and run `just clippy`
 # cargo = { priority = -1, level = "deny" }
 # complexity = { priority = -1, level = "deny" }
 # correctness = { priority = -1, level = "deny" }
