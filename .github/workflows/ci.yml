@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
+        toolchain: [nightly, stable]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
