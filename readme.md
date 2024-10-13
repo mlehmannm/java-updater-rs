@@ -22,6 +22,8 @@ Run as Adminstrator
 schtasks /create /tn "Update Java Installations" /tr "<path/to/java-update.exe> --config <path/to/config>" /sc onlogon
 ```
 
+This will run the Java Updater each time the user logs on.
+
 ## Notification
 
 ### Common variables
