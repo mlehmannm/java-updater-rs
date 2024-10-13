@@ -53,7 +53,7 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [target.'cfg(not(windows))'.dependencies]
-flate2 = "1.0.33"
+flate2 = "1.0.34"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
@@ -63,15 +63,15 @@ zip = "2.2"
 vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
-windows-registry = "0.2"
+windows-registry = "0.3"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.12"
+tempfile = "3.13"
 test-log = "0.2"
 
 [profile.release]
-# borrowed partially from https://github.com/denoland/deno/blob/master/Cargo.toml
+# borrowed partially from https://github.com/denoland/deno/blob/main/Cargo.toml
 codegen-units = 1
 lto = true
 opt-level = 'z'   # optimize for size
