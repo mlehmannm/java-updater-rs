@@ -50,7 +50,14 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Setup Rust Toolchain
         run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - name: Build
+      - name: Build (no default features)
+        id: minimal
+        run: cargo build --no-default-features --verbose
+        continue-on-error: true
+      - name: Check for build failures on minimal build
+        if: steps.minimal.outcome != 'success'
+        run: exit 1
+      - name: Build (with default features)
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose
