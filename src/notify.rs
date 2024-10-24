@@ -8,17 +8,28 @@ use std::collections::HashMap;
 use std::process::{Command, Stdio};
 use tracing::*;
 
+/// A list specifying general categories of notification.
+#[derive(Clone, Debug)]
+pub(crate) enum NotifyKind {
+    /// Failure
+    Failure,
+    /// Success
+    Success,
+}
+
 // The struct that holds the notify command.
 #[derive(Clone, Debug)]
 pub(crate) struct NotifyCommand {
-    // The path to the executable.
-    path: String,
     // The arguments for the executable.
     args: Vec<String>,
-    // The envorinment for the executable.
-    env: HashMap<String, String>,
     // The working directory for the executable.
     directory: Option<String>,
+    // The envorinment for the executable.
+    env: HashMap<String, String>,
+    // The kind of notification.
+    kind: Option<NotifyKind>,
+    // The path to the executable.
+    path: String,
 }
 
 impl NotifyCommand {
@@ -28,8 +39,16 @@ impl NotifyCommand {
             args: config.args.clone(),
             directory: config.directory.clone(),
             env: HashMap::new(),
+            kind: None,
             path: config.path.clone(),
         }
+    }
+
+    /// ???
+    pub(crate) fn kind(&mut self, kind: NotifyKind) -> &mut Self {
+        self.kind = Some(kind);
+
+        self
     }
 
     /// Inserts or updates an explicit environment variable mapping.
@@ -42,7 +61,11 @@ impl NotifyCommand {
     /// Executes (and consumes) the notify command.
     pub(crate) fn execute(self, vars_resolver: VarsResolver) {
         if let Err(err) = self._execute(vars_resolver) {
-            error!(?err, "failed to execute notify command");
+            match self.kind {
+                Some(NotifyKind::Failure) => error!(?err, "failed to execute notify (on failure) command"),
+                Some(NotifyKind::Success) => error!(?err, "failed to execute notify (on success) command"),
+                None => error!(?err, "failed to execute notify command"),
+            }
         };
     }
 

@@ -104,7 +104,7 @@ impl Installation {
                 let err_str = ATTENTION_COLOR.paint(format!("err = {err:?}"));
                 eprintln!("Failed to process installation at {path}!\r\n\t{err_str}");
                 #[cfg(feature = "notify")]
-                self.notify_on_failure(&old_version, err);
+                self.notify_on_failure(old_version.as_ref(), err);
             }
         };
     }
@@ -204,6 +204,7 @@ impl Installation {
 
         // setup command
         let mut command = command.clone();
+        command.kind(NotifyKind::Success);
         command.env("JU_ARCH", &self.arch);
         command.env("JU_INSTALLATION", &path);
         command.env("JU_NEW_VERSION", &new.to_string());
@@ -222,7 +223,7 @@ impl Installation {
     // Notify in case of failure.
     #[cfg(feature = "notify")]
     #[instrument(level = "trace", skip(self))]
-    fn notify_on_failure(&self, old: &Option<semver::Version>, err: anyhow::Error) {
+    fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
         let Some(command) = &self.on_failure else {
             return;
         };
@@ -246,6 +247,7 @@ impl Installation {
 
         // setup command
         let mut command = command.clone();
+        command.kind(NotifyKind::Failure);
         command.env("JU_ARCH", &self.arch);
         command.env("JU_ERROR", &err.to_string());
         command.env("JU_INSTALLATION", &path);

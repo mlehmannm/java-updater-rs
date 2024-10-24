@@ -33,6 +33,7 @@ const ARCHIVE_TYPE: &str = "zip";
 /// Prepare and set up the installation.
 pub(crate) fn setup(basedir: &Path, args: &Args, config: &InstallationConfig) {
     let mut installation = Installation::from_config(basedir, config);
-    installation.dry_run(args.dry_run);
-    installation.setup();
+    installation //
+        .dry_run(args.dry_run) //
+        .setup();
 }

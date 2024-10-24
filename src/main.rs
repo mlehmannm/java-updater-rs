@@ -165,18 +165,18 @@ fn init_tracing(args: &Args) {
 }
 
 // Set up installation.
-fn setup(basedir: &Path, args: &Args, installation: &InstallationConfig) {
-    let path = basedir.join(&installation.directory);
+fn setup(basedir: &Path, args: &Args, config: &InstallationConfig) {
+    let path = basedir.join(&config.directory);
     let path = path::absolute(&path).unwrap_or(path);
     let path = PATH_COLOR.paint(path.to_string_lossy());
 
-    if !installation.enabled {
+    if !config.enabled {
         let not = ATTENTION_COLOR.paint("NOT");
         println!("{not} processing installation at {path} -> disabled");
         return;
     }
 
-    let vendor = installation.vendor.as_str();
+    let vendor = config.vendor.as_str();
     let Ok(vendor) = Vendor::try_from(vendor) else {
         let not = ATTENTION_COLOR.paint("NOT");
         println!("{not} processing installation at {path} -> unsupported vendor '{vendor}'");
@@ -186,8 +186,8 @@ fn setup(basedir: &Path, args: &Args, installation: &InstallationConfig) {
 
     match vendor {
         #[cfg(feature = "azul")]
-        Vendor::Azul => azul::setup(basedir, args, installation),
+        Vendor::Azul => azul::setup(basedir, args, config),
         #[cfg(feature = "eclipse")]
-        Vendor::Eclipse => eclipse::setup(basedir, args, installation),
+        Vendor::Eclipse => eclipse::setup(basedir, args, config),
     };
 }
