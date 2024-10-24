@@ -54,8 +54,8 @@ jobs:
         id: minimal
         run: cargo build --no-default-features --verbose
         continue-on-error: true
-      - name: Check minimal build failed
-        if: (${{ failure() || success() }} && ${{ steps.minimal.outcome }} == 'success')
+      - name: Check that minimal build failed
+        if: ${{ (failure() || success()) && steps.minimal.outcome }} == 'success'
         run: exit 1
       - name: Build (with default features)
         run: cargo build --verbose
