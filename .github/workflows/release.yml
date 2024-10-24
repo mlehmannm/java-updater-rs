@@ -52,7 +52,7 @@ jobs:
             command: cargo
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
       - run: cargo install cross --git https://github.com/cross-rs/cross
