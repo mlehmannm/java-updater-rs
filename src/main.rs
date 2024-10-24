@@ -10,13 +10,12 @@ mod meta;
 #[cfg(feature = "notify")]
 mod notify;
 mod package;
-#[cfg(feature = "notify")]
 mod vars;
 mod vendor;
 mod version;
 
 #[cfg(not(any(feature = "azul", feature = "eclipse")))]
-compile_error!("At least one vendor must be set");
+compile_error!("At least one vendor must be set.");
 
 use crate::args::Args;
 use crate::colors::*;

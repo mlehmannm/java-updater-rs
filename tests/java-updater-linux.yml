@@ -16,7 +16,7 @@ installations:
   # Azul
 
   - vendor: azul
-    directory: tmp/azul/x86/8
+    directory: tmp/${env.JU_VENDOR_ID}/x86/${env.JU_VERSION}
     type: jdk
     architecture: i686
     version: "8"
@@ -26,7 +26,7 @@ installations:
   # Eclipse
 
   - vendor: eclipse
-    directory: tmp/eclipse/x86_64/17
+    directory: tmp/${env.JU_VENDOR_ID}/${env.JU_ARCH}/${env.JU_VERSION}
     type: jdk
     version: 17
     on-update: *on-update
