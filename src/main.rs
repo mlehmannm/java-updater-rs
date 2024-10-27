@@ -165,6 +165,7 @@ fn init_tracing(args: &Args) {
 
 // Set up installation.
 fn setup(basedir: &Path, args: &Args, config: &InstallationConfig) {
+    // FIXME path may contain variables which won't be resolved here
     let path = basedir.join(&config.directory);
     let path = path::absolute(&path).unwrap_or(path);
     let path = PATH_COLOR.paint(path.to_string_lossy());

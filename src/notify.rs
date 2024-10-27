@@ -59,7 +59,7 @@ impl NotifyCommand {
     }
 
     /// Executes (and consumes) the notify command.
-    pub(crate) fn execute(self, vars_resolver: VarsResolver) {
+    pub(crate) fn execute(self, vars_resolver: &VarsResolver) {
         if let Err(err) = self._execute(vars_resolver) {
             match self.kind {
                 Some(NotifyKind::Failure) => error!(?err, "failed to execute notify (on failure) command"),
@@ -71,7 +71,7 @@ impl NotifyCommand {
 
     // Executes the notify command internally.
     #[instrument(err, level = "trace")]
-    fn _execute(&self, vars_resolver: VarsResolver) -> anyhow::Result<()> {
+    fn _execute(&self, vars_resolver: &VarsResolver) -> anyhow::Result<()> {
         // prepare command
         let path = vars_resolver.resolve(&self.path)?;
         let mut cmd = Command::new(path.as_ref());

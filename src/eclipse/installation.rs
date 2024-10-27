@@ -23,9 +23,11 @@ pub(super) struct Installation {
     version: String,
     dry_run: bool,
     #[cfg(feature = "notify")]
-    on_failure: Option<NotifyCommand>,
+    on_failure: Vec<NotifyCommand>,
     #[cfg(feature = "notify")]
-    on_update: Option<NotifyCommand>,
+    on_run: Vec<NotifyCommand>,
+    #[cfg(feature = "notify")]
+    on_update: Vec<NotifyCommand>,
 }
 
 impl Installation {
@@ -34,9 +36,11 @@ impl Installation {
         let vendor = Vendor::Eclipse;
         let path = Self::resolve_path(&vendor, basedir, config)?;
         #[cfg(feature = "notify")]
-        let on_update = config.on_update.as_ref().map(NotifyCommand::from_config);
+        let on_failure = config.on_failure.iter().map(NotifyCommand::from_config).collect();
         #[cfg(feature = "notify")]
-        let on_failure = config.on_failure.as_ref().map(NotifyCommand::from_config);
+        let on_run = config.on_run.iter().map(NotifyCommand::from_config).collect();
+        #[cfg(feature = "notify")]
+        let on_update = config.on_update.iter().map(NotifyCommand::from_config).collect();
 
         Ok(Installation {
             arch: config.architecture.clone(),
@@ -47,9 +51,11 @@ impl Installation {
             vendor,
             version: config.version.clone(),
             #[cfg(feature = "notify")]
-            on_update,
-            #[cfg(feature = "notify")]
             on_failure,
+            #[cfg(feature = "notify")]
+            on_run,
+            #[cfg(feature = "notify")]
+            on_update,
         })
     }
 
@@ -104,12 +110,16 @@ impl Installation {
                         println!("Processed installation at  {path} [{old_version_str} -> {new_version}]");
                         #[cfg(feature = "notify")]
                         self.notify_on_update(old_version, &metadata.version);
+                        #[cfg(feature = "notify")]
+                        self.notify_on_run(old_version, &metadata.version);
                     }
                 } else if self.dry_run {
                     let not = ATTENTION_COLOR.paint("NOT");
                     println!("dry-run: {not} processing installation at  {path} [{old_version_str}]");
                 } else {
                     println!("Processed installation at  {path} [{old_version_str}]");
+                    #[cfg(feature = "notify")]
+                    self.notify_on_run(old_version, &metadata.version);
                 }
             }
             Ok(None) => {
@@ -198,54 +208,11 @@ impl Installation {
         metadata.save(filename)
     }
 
-    // Notify in case of update.
-    #[cfg(feature = "notify")]
-    #[instrument(level = "trace", skip(self))]
-    fn notify_on_update(&self, old: Option<&semver::Version>, new: &semver::Version) {
-        let Some(command) = &self.on_update else {
-            return;
-        };
-
-        let path = self.path.to_string_lossy();
-
-        // setup variable resolver(s)
-        let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
-        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
-        simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
-        if let Some(old) = old {
-            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
-        }
-        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
-        let env_var_resolver = EnvVarResolver;
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
-        let vars_resolver = VarsResolver::new(var_resolvers);
-
-        // setup command
-        let mut command = command.clone();
-        command.kind(NotifyKind::Success);
-        command.env("JU_ARCH", &self.arch);
-        command.env("JU_INSTALLATION", &path);
-        command.env("JU_NEW_VERSION", &new.to_string());
-        if let Some(old) = old {
-            command.env("JU_OLD_VERSION", &old.to_string());
-        }
-        command.env("JU_TYPE", &self.package_type);
-        command.env("JU_VENDOR_ID", self.vendor.id());
-        command.env("JU_VENDOR_NAME", self.vendor.name());
-
-        // execute command
-        trace!(?command, "executing on-update command");
-        command.execute(vars_resolver);
-    }
-
     // Notify in case of failure.
     #[cfg(feature = "notify")]
     #[instrument(level = "trace", skip(self))]
     fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
-        let Some(command) = &self.on_failure else {
+        if self.on_failure.is_empty() {
             return;
         };
 
@@ -266,22 +233,117 @@ impl Installation {
         let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
         let vars_resolver = VarsResolver::new(var_resolvers);
 
-        // setup command
-        let mut command = command.clone();
-        command.kind(NotifyKind::Failure);
-        command.env("JU_ARCH", &self.arch);
-        command.env("JU_ERROR", &err.to_string());
-        command.env("JU_INSTALLATION", &path);
-        if let Some(old) = old {
-            command.env("JU_OLD_VERSION", &old.to_string());
-        }
-        command.env("JU_TYPE", &self.package_type);
-        command.env("JU_VENDOR_ID", self.vendor.id());
-        command.env("JU_VENDOR_NAME", self.vendor.name());
+        // process all commands
+        for command in &self.on_failure {
+            // setup command
+            let mut command = command.clone();
+            command.kind(NotifyKind::Failure);
+            command.env("JU_ARCH", &self.arch);
+            command.env("JU_ERROR", &err.to_string());
+            command.env("JU_INSTALLATION", &path);
+            if let Some(old) = old {
+                command.env("JU_OLD_VERSION", &old.to_string());
+            }
+            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_VENDOR_ID", self.vendor.id());
+            command.env("JU_VENDOR_NAME", self.vendor.name());
 
-        // execute command
-        trace!(?command, "executing on-failure command");
-        command.execute(vars_resolver);
+            // execute command
+            trace!(?command, "executing on-failure command");
+            command.execute(&vars_resolver);
+        }
+    }
+
+    // Notify in case of each run.
+    #[cfg(feature = "notify")]
+    #[instrument(level = "trace", skip(self))]
+    fn notify_on_run(&self, old: Option<&semver::Version>, new: &semver::Version) {
+        if self.on_run.is_empty() {
+            return;
+        };
+
+        let path = self.path.to_string_lossy();
+
+        // setup variable resolver(s)
+        let mut simple_var_resolver = SimpleVarResolver::new();
+        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
+        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
+        simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
+        if let Some(old) = old {
+            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
+        }
+        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
+        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
+        let env_var_resolver = EnvVarResolver;
+        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
+        let vars_resolver = VarsResolver::new(var_resolvers);
+
+        // process all commands
+        for command in &self.on_run {
+            // setup command
+            let mut command = command.clone();
+            command.kind(NotifyKind::Success);
+            command.env("JU_ARCH", &self.arch);
+            command.env("JU_INSTALLATION", &path);
+            command.env("JU_NEW_VERSION", &new.to_string());
+            if let Some(old) = old {
+                command.env("JU_OLD_VERSION", &old.to_string());
+            }
+            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_VENDOR_ID", self.vendor.id());
+            command.env("JU_VENDOR_NAME", self.vendor.name());
+
+            // execute command
+            trace!(?command, "executing on-update command");
+            command.execute(&vars_resolver);
+        }
+    }
+
+    // Notify in case of update.
+    #[cfg(feature = "notify")]
+    #[instrument(level = "trace", skip(self))]
+    fn notify_on_update(&self, old: Option<&semver::Version>, new: &semver::Version) {
+        if self.on_update.is_empty() {
+            return;
+        };
+
+        let path = self.path.to_string_lossy();
+
+        // setup variable resolver(s)
+        let mut simple_var_resolver = SimpleVarResolver::new();
+        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
+        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
+        simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
+        if let Some(old) = old {
+            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
+        }
+        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
+        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
+        let env_var_resolver = EnvVarResolver;
+        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
+        let vars_resolver = VarsResolver::new(var_resolvers);
+
+        // process all commands
+        for command in &self.on_update {
+            // setup command
+            let mut command = command.clone();
+            command.kind(NotifyKind::Success);
+            command.env("JU_ARCH", &self.arch);
+            command.env("JU_INSTALLATION", &path);
+            command.env("JU_NEW_VERSION", &new.to_string());
+            if let Some(old) = old {
+                command.env("JU_OLD_VERSION", &old.to_string());
+            }
+            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_VENDOR_ID", self.vendor.id());
+            command.env("JU_VENDOR_NAME", self.vendor.name());
+
+            // execute command
+            trace!(?command, "executing on-update command");
+            command.execute(&vars_resolver);
+        }
     }
 }
 

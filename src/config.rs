@@ -59,14 +59,18 @@ pub(crate) struct InstallationConfig {
     /// The major version of the installation (17, 21, etc.)
     #[serde(deserialize_with = "installation_version_deser")]
     pub(crate) version: String,
-    /// The command executed on failure.
+    /// The command(s) executed on failure.
     #[cfg(feature = "notify")]
     #[serde(default, rename = "on-failure")]
-    pub(crate) on_failure: Option<NotifyCommandConfig>,
-    /// The command executed on update.
+    pub(crate) on_failure: Vec<NotifyCommandConfig>,
+    /// The command(s) executed on each run.
+    #[cfg(feature = "notify")]
+    #[serde(default, rename = "on-run")]
+    pub(crate) on_run: Vec<NotifyCommandConfig>,
+    /// The command(s) executed on update.
     #[cfg(feature = "notify")]
     #[serde(default, rename = "on-update")]
-    pub(crate) on_update: Option<NotifyCommandConfig>,
+    pub(crate) on_update: Vec<NotifyCommandConfig>,
 }
 
 // Returns the default value for [InstallationConfig::architecture].
@@ -127,7 +131,7 @@ pub(crate) struct NotifyCommandConfig {
     /// The arguments for the executable.
     #[serde(default)]
     pub(crate) args: Vec<String>,
-    /// The working directory for the executable.
+    /// The optional working directory for the executable.
     pub(crate) directory: Option<String>,
 }
 

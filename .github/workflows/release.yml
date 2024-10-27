@@ -8,7 +8,6 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 env:
-  # Artifact name.
   ARTIFACT_NAME: java-updater
 
 jobs:
@@ -30,26 +29,33 @@ jobs:
         # https://github.com/cross-rs/cross#supported-targets
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
         include:
-          - build: linux-arm
+          - archive: ".tar.gz"
+            build: linux-arm
+            command: cross
             os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+          - archive: ".tar.gz"
+            build: linux-32-bit
             command: cross
-          - build: linux-32-bit
             os: ubuntu-latest
             target: i686-unknown-linux-gnu
+          - archive: ".tar.gz"
+            build: linux-64-bit
             command: cross
-          - build: linux-64-bit
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            command: cross
-          - build: windows-32-bit
+          - archive: ".zip"
+            build: windows-32-bit
+            command: cargo
+            ext: ".exe"
             os: windows-latest
             target: i686-pc-windows-msvc
+          - archive: ".zip"
+            build: windows-64-bit
             command: cargo
-          - build: windows-64-bit
+            ext: ".exe"
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            command: cargo
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -61,20 +67,16 @@ jobs:
         run: ${{ matrix.command }} build --release --target ${{ matrix.target }}
       # 7z is available on all runners.
       # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#preinstalled-software
-      - name: Create archive
+      - name: Create zip archive
         id: archive
+        if: matrix.archive == '.zip'
         shell: bash
         run: |
           DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
-          if [[ "${{ matrix.target }}" =~ "-pc-windows-" ]]; then
-            SUFFIX=".exe"
-          else
-            SUFFIX=""
-          fi
-          mkdir "$DIRECTORY"
-          cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}$SUFFIX" "$DIRECTORY"
-          7z a "$DIRECTORY.zip" "$DIRECTORY"
-          echo "path=$DIRECTORY.zip" >> $GITHUB_OUTPUT
+          mkdir "${DIRECTORY}"
+          cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
+          7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
+          echo "path=${DIRECTORY}${{ matrix.archive }}" >> "${GITHUB_OUTPUT}"
       - env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload ${{ github.ref_name }} ${{ steps.archive.outputs.path }}
