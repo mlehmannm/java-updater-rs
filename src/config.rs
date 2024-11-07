@@ -2,8 +2,10 @@
 //!
 //! This module contains the configuration read from a YAML file.
 
+use crate::vars::*;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer};
+use std::borrow::Cow;
 use std::env;
 use std::fmt;
 use std::fs::File;
@@ -63,10 +65,10 @@ pub(crate) struct InstallationConfig {
     #[cfg(feature = "notify")]
     #[serde(default, rename = "on-failure")]
     pub(crate) on_failure: Vec<NotifyCommandConfig>,
-    /// The command(s) executed on each run.
+    /// The command(s) executed on success.
     #[cfg(feature = "notify")]
-    #[serde(default, rename = "on-run")]
-    pub(crate) on_run: Vec<NotifyCommandConfig>,
+    #[serde(default, rename = "on-success")]
+    pub(crate) on_success: Vec<NotifyCommandConfig>,
     /// The command(s) executed on update.
     #[cfg(feature = "notify")]
     #[serde(default, rename = "on-update")]
@@ -121,6 +123,40 @@ where
     deserializer.deserialize_any(UintOrString(PhantomData))
 }
 
+impl InstallationConfig {
+    /// Returns [`Installation::directory`] where all known variables are expanded.
+    pub(crate) fn expand_directory(&self) -> String {
+        // setup variable resolver(s)
+        let mut simple_var_resolver = SimpleVarResolver::new();
+        simple_var_resolver.insert("JU_ARCH", env::consts::ARCH.to_string());
+        simple_var_resolver.insert("JU_CONFIG_ARCH", self.architecture.to_string());
+        simple_var_resolver.insert("JU_CONFIG_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("JU_CONFIG_VENDOR", self.vendor.to_string());
+        simple_var_resolver.insert("JU_CONFIG_VERSION", self.version.to_string());
+        simple_var_resolver.insert("JU_OS", env::consts::OS.to_string());
+        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(EnvVarResolver), Box::new(AsIsVarResolver)];
+        let vars_resolver = VarExpander::new(var_resolvers);
+
+        // expand all known variables and leave unknown variables as-is
+        let directory = &self.directory;
+        vars_resolver.expand(directory).unwrap_or(Cow::Borrowed(directory)).to_string()
+    }
+}
+
+impl VarResolver for InstallationConfig {
+    fn resolve_var(&self, var_name: &str) -> Result<String, VarError> {
+        let value = match var_name {
+            "JU_CONFIG_ARCH" => &self.architecture,
+            "JU_CONFIG_TYPE" => &self.package_type,
+            "JU_CONFIG_VENDOR" => &self.vendor,
+            "JU_CONFIG_VERSION" => &self.version,
+            _ => return Err(VarError::NotPresent(var_name.to_owned())),
+        };
+
+        Ok(value.clone())
+    }
+}
+
 /// The configuration for a notify command.
 #[cfg(feature = "notify")]
 #[derive(Debug, Default, Deserialize)]
@@ -142,12 +178,12 @@ mod tests {
     use test_log::test;
 
     #[test]
-    fn installation_version_as_uint() {
+    fn parse_version_as_uint() {
         let config = r"
           vendor: azul
+          architecture: i686
           directory: tmp/azul/x86/8
           type: jdk
-          architecture: i686
           version: 8
         ";
         let config: InstallationConfig = serde_yaml::from_str(config).unwrap();
@@ -155,15 +191,38 @@ mod tests {
     }
 
     #[test]
-    fn installation_version_as_string() {
+    fn parse_version_as_string() {
         let config = r#"
           vendor: azul
+          architecture: i686
           directory: tmp/azul/x86/8
           type: jdk
-          architecture: i686
           version: "8"
         "#;
         let config: InstallationConfig = serde_yaml::from_str(config).unwrap();
         assert_eq!("8", config.version);
+    }
+
+    #[test]
+    fn resolve_directory() {
+        let architecture = env::consts::ARCH.to_string();
+        let os = env::consts::OS.to_string();
+        let config = InstallationConfig {
+            architecture: architecture.clone(),
+            directory: "${JU_CONFIG_ARCH}/\
+                        ${JU_CONFIG_TYPE}/\
+                        ${JU_CONFIG_VENDOR}/\
+                        ${JU_CONFIG_VERSION}/\
+                        ${JU_OS}/\
+                        ${JU_NOT_SUPPORTED}"
+                .to_string(),
+            package_type: "jdk".to_string(),
+            vendor: "eclipse".to_string(),
+            version: "8".to_string(),
+            ..Default::default()
+        };
+        let actual = config.expand_directory();
+        let expected = format!("{architecture}/jdk/eclipse/8/{os}/${{JU_NOT_SUPPORTED}}");
+        assert_eq!(expected, actual);
     }
 }

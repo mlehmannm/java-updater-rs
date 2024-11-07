@@ -1,28 +1,29 @@
 ---
 aliases:
+  directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
+  enabled: &enabled true
   # https://github.com/vaskovsky/notify-send
   notify-on-failure: &notify-on-failure
     path: D:\dev\src\notify-send\notify-send.exe
     args:
       - "failed"
-      - "${env.JU_ERROR}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${env.JU_ERROR}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
     directory: "${env.windir}"
   notify-on-update: &notify-on-update
     path: D:\dev\src\notify-send\notify-send.exe
     args:
       - "updated"
-      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
     directory: "${env.windir}"
-
-settings:
 
 installations:
   # Azul
 
   - vendor: azul
-    directory: tmp/${env.JU_VENDOR_ID}/x86/${env.JU_VERSION}
-    type: jdk
     architecture: i686
+    directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
+    enabled: *enabled
+    type: jdk
     version: "8"
     on-failure:
       - *notify-on-failure
@@ -32,7 +33,8 @@ installations:
   # Eclipse
 
   - vendor: eclipse
-    directory: tmp/${env.JU_VENDOR_ID}/${env.JU_ARCH}/${env.JU_VERSION}
+    directory: *directory
+    enabled: *enabled
     type: jdk
     version: 17
     on-failure:
@@ -41,4 +43,4 @@ installations:
       - *notify-on-update
       - path: powershell.exe
         args:
-          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME','${env.JU_INSTALLATION}', 'User')"
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME','${env.JU_DIRECTORY}', 'User')"

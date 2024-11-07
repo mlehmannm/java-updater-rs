@@ -31,7 +31,7 @@ const ARCHIVE_TYPE: &str = "tar.gz";
 const ARCHIVE_TYPE: &str = "zip";
 
 /// Prepare and set up the installation.
-pub(crate) fn setup(basedir: &Path, args: &Args, config: &InstallationConfig) {
+pub(crate) fn setup(basedir: &Path, args: &Args, config: InstallationConfig) {
     let mut installation = match Installation::from_config(basedir, config) {
         Ok(installation) => installation,
         Err(err) => {

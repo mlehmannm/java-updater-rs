@@ -1,17 +1,19 @@
 ---
 aliases:
+  directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
+  enabled: &enabled true
   # Fedora: sudo dnf install libnotify
   # Debian: sudo apt install notify-send
   notify-on-failure: &notify-on-failure
     path: notify-send
     args:
       - "failed"
-      - "${env.JU_ERROR}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${env.JU_ERROR}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
   notify-on-update: &notify-on-update
     path: notify-send
     args:
       - "updated"
-      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_INSTALLATION} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
 
 settings:
 
@@ -19,9 +21,10 @@ installations:
   # Azul
 
   - vendor: azul
-    directory: tmp/${env.JU_VENDOR_ID}/x86/${env.JU_VERSION}
-    type: jdk
     architecture: i686
+    directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
+    enabled: *enabled
+    type: jdk
     version: "8"
     on-failure:
       - *notify-on-failure
@@ -31,7 +34,8 @@ installations:
   # Eclipse
 
   - vendor: eclipse
-    directory: tmp/${env.JU_VENDOR_ID}/${env.JU_ARCH}/${env.JU_VERSION}
+    directory: *directory
+    enabled: *enabled
     type: jdk
     version: 17
     on-failure:

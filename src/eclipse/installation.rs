@@ -10,75 +10,32 @@ use crate::vendor::*;
 use anyhow::anyhow;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use tracing::{instrument, trace, warn};
 
 /// The installation contains everything to materialise a java package (JDK or JRE) to disc.
 #[derive(Debug)]
 pub(super) struct Installation {
-    arch: String,
+    config: Rc<InstallationConfig>,
+    dry_run: bool,
     os: String,
-    package_type: String,
     path: PathBuf,
     vendor: Vendor,
-    version: String,
-    dry_run: bool,
-    #[cfg(feature = "notify")]
-    on_failure: Vec<NotifyCommand>,
-    #[cfg(feature = "notify")]
-    on_run: Vec<NotifyCommand>,
-    #[cfg(feature = "notify")]
-    on_update: Vec<NotifyCommand>,
 }
 
 impl Installation {
     // Creates a new [Installation] out of the given [InstallationConfig].
-    pub(super) fn from_config(basedir: &Path, config: &InstallationConfig) -> anyhow::Result<Self> {
-        let vendor = Vendor::Eclipse;
-        let path = Self::resolve_path(&vendor, basedir, config)?;
-        #[cfg(feature = "notify")]
-        let on_failure = config.on_failure.iter().map(NotifyCommand::from_config).collect();
-        #[cfg(feature = "notify")]
-        let on_run = config.on_run.iter().map(NotifyCommand::from_config).collect();
-        #[cfg(feature = "notify")]
-        let on_update = config.on_update.iter().map(NotifyCommand::from_config).collect();
-
-        Ok(Installation {
-            arch: config.architecture.clone(),
-            dry_run: false,
-            os: env::consts::OS.to_string(),
-            package_type: config.package_type.clone(),
-            path,
-            vendor,
-            version: config.version.clone(),
-            #[cfg(feature = "notify")]
-            on_failure,
-            #[cfg(feature = "notify")]
-            on_run,
-            #[cfg(feature = "notify")]
-            on_update,
-        })
-    }
-
-    // Resolves the complete path of the installation.
-    fn resolve_path(vendor: &Vendor, basedir: &Path, config: &InstallationConfig) -> anyhow::Result<PathBuf> {
-        // setup variable resolver(s)
-        let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", config.architecture.to_string());
-        simple_var_resolver.insert("env.JU_OS", env::consts::OS.to_string());
-        simple_var_resolver.insert("env.JU_TYPE", config.package_type.to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_ID", vendor.id().to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_NAME", vendor.name().to_string());
-        simple_var_resolver.insert("env.JU_VERSION", config.version.to_string());
-        let env_var_resolver = EnvVarResolver;
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
-        let vars_resolver = VarsResolver::new(var_resolvers);
-
-        // resolve path
-        let directory = vars_resolver.resolve(&config.directory)?;
-        let path = basedir.join(directory.as_ref());
+    pub(super) fn from_config(basedir: &Path, config: InstallationConfig) -> anyhow::Result<Self> {
+        let path = basedir.join(config.expand_directory());
         let path = path::absolute(&path).unwrap_or(path);
 
-        Ok(path)
+        Ok(Installation {
+            config: Rc::new(config),
+            dry_run: false,
+            os: env::consts::OS.to_string(), // TODO do we really need this here?
+            path,
+            vendor: Vendor::Eclipse,
+        })
     }
 
     /// Whether to perform the installation or not.
@@ -111,7 +68,7 @@ impl Installation {
                         #[cfg(feature = "notify")]
                         self.notify_on_update(old_version, &metadata.version);
                         #[cfg(feature = "notify")]
-                        self.notify_on_run(old_version, &metadata.version);
+                        self.notify_on_success(old_version, &metadata.version);
                     }
                 } else if self.dry_run {
                     let not = ATTENTION_COLOR.paint("NOT");
@@ -119,7 +76,7 @@ impl Installation {
                 } else {
                     println!("Processed installation at  {path} [{old_version_str}]");
                     #[cfg(feature = "notify")]
-                    self.notify_on_run(old_version, &metadata.version);
+                    self.notify_on_success(old_version, &metadata.version);
                 }
             }
             Ok(None) => {
@@ -191,10 +148,10 @@ impl Installation {
     #[instrument(level = "trace", skip(self))]
     fn query_latest(&self) -> anyhow::Result<MetadataResponse> {
         let req = MetadataRequest {
-            arch: self.arch.clone(),
+            arch: self.config.architecture.clone(),
             os: self.os.clone(),
-            package_type: self.package_type.clone(),
-            version: self.version.clone(),
+            package_type: self.config.package_type.clone(),
+            version: self.config.version.clone(),
         };
         req.query()
     }
@@ -212,7 +169,7 @@ impl Installation {
     #[cfg(feature = "notify")]
     #[instrument(level = "trace", skip(self))]
     fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
-        if self.on_failure.is_empty() {
+        if self.config.on_failure.is_empty() {
             return;
         };
 
@@ -220,45 +177,46 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
         simple_var_resolver.insert("env.JU_ERROR", err.to_string());
-        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
+        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = EnvVarResolver;
         let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
-        let vars_resolver = VarsResolver::new(var_resolvers);
+        let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
-        for command in &self.on_failure {
+        let commands: Vec<NotifyCommand> = self.config.on_failure.iter().map(NotifyCommand::from_config).collect();
+        for command in commands {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Failure);
-            command.env("JU_ARCH", &self.arch);
+            command.env("JU_ARCH", &self.config.architecture);
             command.env("JU_ERROR", &err.to_string());
-            command.env("JU_INSTALLATION", &path);
+            command.env("JU_DIRECTORY", &path);
             if let Some(old) = old {
                 command.env("JU_OLD_VERSION", &old.to_string());
             }
-            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_TYPE", &self.config.package_type);
             command.env("JU_VENDOR_ID", self.vendor.id());
             command.env("JU_VENDOR_NAME", self.vendor.name());
 
             // execute command
             trace!(?command, "executing on-failure command");
-            command.execute(&vars_resolver);
+            command.execute(&var_expander);
         }
     }
 
-    // Notify in case of each run.
+    // Notify in case of success.
     #[cfg(feature = "notify")]
     #[instrument(level = "trace", skip(self))]
-    fn notify_on_run(&self, old: Option<&semver::Version>, new: &semver::Version) {
-        if self.on_run.is_empty() {
+    fn notify_on_success(&self, old: Option<&semver::Version>, new: &semver::Version) {
+        if self.config.on_success.is_empty() {
             return;
         };
 
@@ -266,37 +224,38 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
-        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
+        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = EnvVarResolver;
         let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
-        let vars_resolver = VarsResolver::new(var_resolvers);
+        let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
-        for command in &self.on_run {
+        let commands: Vec<NotifyCommand> = self.config.on_success.iter().map(NotifyCommand::from_config).collect();
+        for command in commands {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
-            command.env("JU_ARCH", &self.arch);
-            command.env("JU_INSTALLATION", &path);
+            command.env("JU_ARCH", &self.config.architecture);
+            command.env("JU_DIRECTORY", &path);
             command.env("JU_NEW_VERSION", &new.to_string());
             if let Some(old) = old {
                 command.env("JU_OLD_VERSION", &old.to_string());
             }
-            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_TYPE", &self.config.package_type);
             command.env("JU_VENDOR_ID", self.vendor.id());
             command.env("JU_VENDOR_NAME", self.vendor.name());
 
             // execute command
-            trace!(?command, "executing on-update command");
-            command.execute(&vars_resolver);
+            trace!(?command, "executing on-success command");
+            command.execute(&var_expander);
         }
     }
 
@@ -304,7 +263,7 @@ impl Installation {
     #[cfg(feature = "notify")]
     #[instrument(level = "trace", skip(self))]
     fn notify_on_update(&self, old: Option<&semver::Version>, new: &semver::Version) {
-        if self.on_update.is_empty() {
+        if self.config.on_update.is_empty() {
             return;
         };
 
@@ -312,75 +271,38 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.arch.to_string());
-        simple_var_resolver.insert("env.JU_INSTALLATION", path.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
+        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = EnvVarResolver;
         let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
-        let vars_resolver = VarsResolver::new(var_resolvers);
+        let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
-        for command in &self.on_update {
+        let commands: Vec<NotifyCommand> = self.config.on_update.iter().map(NotifyCommand::from_config).collect();
+        for command in commands {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
-            command.env("JU_ARCH", &self.arch);
-            command.env("JU_INSTALLATION", &path);
+            command.env("JU_ARCH", &self.config.architecture);
+            command.env("JU_DIRECTORY", &path);
             command.env("JU_NEW_VERSION", &new.to_string());
             if let Some(old) = old {
                 command.env("JU_OLD_VERSION", &old.to_string());
             }
-            command.env("JU_TYPE", &self.package_type);
+            command.env("JU_TYPE", &self.config.package_type);
             command.env("JU_VENDOR_ID", self.vendor.id());
             command.env("JU_VENDOR_NAME", self.vendor.name());
 
             // execute command
             trace!(?command, "executing on-update command");
-            command.execute(&vars_resolver);
+            command.execute(&var_expander);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    use test_log::test;
-
-    #[test]
-    fn resolve_path_failure() {
-        let vendor = Vendor::Eclipse;
-        let config = InstallationConfig {
-            directory: "${XYZ}".to_string(),
-            ..Default::default()
-        };
-        let basedir = env::current_dir().unwrap();
-        let result = Installation::resolve_path(&vendor, &basedir, &config);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn resolve_path_success() {
-        let architecture = env::consts::ARCH.to_string();
-        let os = env::consts::OS.to_string();
-        let vendor = Vendor::Eclipse;
-        let config = InstallationConfig {
-            architecture: architecture.clone(),
-            directory: "${env.JU_ARCH}/${env.JU_OS}/${env.JU_TYPE}/${env.JU_VENDOR_ID}/${env.JU_VENDOR_NAME}/${env.JU_VERSION}".to_string(),
-            package_type: "jdk".to_string(),
-            vendor: vendor.id().to_string(),
-            version: "8".to_string(),
-            ..Default::default()
-        };
-        let basedir = env::current_dir().unwrap();
-        let actual = Installation::resolve_path(&vendor, &basedir, &config).unwrap();
-        let expected = basedir.join(format!("{architecture}/{os}/jdk/{}/{}/8", vendor.id(), vendor.name()));
-        assert_eq!(expected, actual);
     }
 }

@@ -91,8 +91,8 @@ fmt *ARGS='':
     cargo {{ CHANNEL }} fmt --all {{ ARGS }}
 
 # release a new version
-release version='--help':
-    cargo {{ CHANNEL }} release {{ version }} --execute
+release VERSION='--help':
+    cargo {{ CHANNEL }} release {{ VERSION }} --execute
 
 # create the icon from svg via imagemagick (docker)
 ico:
