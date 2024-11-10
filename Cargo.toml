@@ -67,7 +67,7 @@ windows-registry = "0.3"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.13"
+tempfile = "3.14"
 test-log = "0.2"
 
 [profile.release]
