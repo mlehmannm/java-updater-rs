@@ -48,6 +48,7 @@ serde_yaml = "0.9"
 sha2 = "0.10"
 shellexpand = "3.1"
 thiserror = "2"
+threadpool = "1.8"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

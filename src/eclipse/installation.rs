@@ -25,17 +25,17 @@ pub(super) struct Installation {
 
 impl Installation {
     // Creates a new [Installation] out of the given [InstallationConfig].
-    pub(super) fn from_config(basedir: &Path, config: InstallationConfig) -> anyhow::Result<Self> {
+    pub(super) fn from_config(basedir: &Path, config: InstallationConfig) -> Self {
         let path = basedir.join(config.expand_directory());
         let path = path::absolute(&path).unwrap_or(path);
 
-        Ok(Installation {
+        Self {
             config: Rc::new(config),
             dry_run: false,
             os: env::consts::OS.to_string(), // TODO do we really need this here?
             path,
             vendor: Vendor::Eclipse,
-        })
+        }
     }
 
     /// Whether to perform the installation or not.
@@ -62,9 +62,9 @@ impl Installation {
                     let new_version = INFO_COLOR.paint(new_version.to_string());
                     if self.dry_run {
                         let not = ATTENTION_COLOR.paint("NOT");
-                        println!("dry-run: {not} processing installation at  {path} [{old_version_str} -> {new_version}]");
+                        println!("dry-run: {not} processing installation at {path} [{old_version_str} -> {new_version}]");
                     } else {
-                        println!("Processed installation at  {path} [{old_version_str} -> {new_version}]");
+                        println!("Processed installation at {path} [{old_version_str} -> {new_version}]");
                         #[cfg(feature = "notify")]
                         self.notify_on_update(old_version, &metadata.version);
                         #[cfg(feature = "notify")]
@@ -72,9 +72,9 @@ impl Installation {
                     }
                 } else if self.dry_run {
                     let not = ATTENTION_COLOR.paint("NOT");
-                    println!("dry-run: {not} processing installation at  {path} [{old_version_str}]");
+                    println!("dry-run: {not} processing installation at {path} [{old_version_str}]");
                 } else {
-                    println!("Processed installation at  {path} [{old_version_str}]");
+                    println!("Processed installation at {path} [{old_version_str}]");
                     #[cfg(feature = "notify")]
                     self.notify_on_success(old_version, &metadata.version);
                 }
@@ -83,9 +83,9 @@ impl Installation {
                 let version = INFO_COLOR.paint("n/a");
                 if self.dry_run {
                     let not = ATTENTION_COLOR.paint("NOT");
-                    println!("dry-run: {not} processing installation at  {path} [{version}]");
+                    println!("dry-run: {not} processing installation at {path} [{version}]");
                 } else {
-                    println!("Processed installation at  {path} [{version}]");
+                    println!("Processed installation at {path} [{version}]");
                 }
             }
             Err(err) => {

@@ -23,7 +23,9 @@ use crate::config::*;
 use crate::version::Version;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use threadpool::ThreadPool;
 use time::format_description::FormatItem;
 use time::macros::format_description;
 use time::{OffsetDateTime, UtcOffset};
@@ -46,7 +48,7 @@ fn main() {
     let _ = nu_ansi_term::enable_ansi_support();
 
     // delegate
-    if let Err(err) = _main() {
+    if let Err(err) = internal_main() {
         eprintln!("Failed! err = {err:#?}");
         std::process::exit(EXIT_NOK);
     } else {
@@ -56,7 +58,7 @@ fn main() {
 
 // Internal main entry point for the application.
 #[doc(hidden)]
-fn _main() -> anyhow::Result<()> {
+fn internal_main() -> anyhow::Result<()> {
     // remember start date/time
     let start = Instant::now();
 
@@ -95,10 +97,17 @@ fn _main() -> anyhow::Result<()> {
     };
     debug!(basedir = %basedir.display());
 
-    // process installations
+    // start processing installations
+    let thread_pool = ThreadPool::new(num_threads(args.threads));
+    let args = Arc::new(args);
     for installation in config.installations {
-        setup(basedir, &args, installation);
+        let basedir = basedir.to_path_buf();
+        let args = args.clone();
+        thread_pool.execute(move || {
+            setup(&basedir, &args, installation);
+        });
     }
+    thread_pool.join();
 
     // print some statistics
     let elapsed = start.elapsed();
@@ -109,6 +118,23 @@ fn _main() -> anyhow::Result<()> {
     Ok(())
 }
 
+// Factor to compute the threads.
+const THREADS_FACTOR: usize = 2;
+
+// Computes the number of threads to use.
+#[doc(hidden)]
+fn num_threads(threads: Option<usize>) -> usize {
+    // at least one thread
+    let min_threads = 1;
+    // at most max_threads
+    let max_threads = std::thread::available_parallelism().map_or(min_threads, std::num::NonZeroUsize::get);
+    // most of the tasks are I/O bound, so we can use more threads than available parallelism
+    let max_threads = max_threads * THREADS_FACTOR;
+    threads.unwrap_or(max_threads).clamp(min_threads, max_threads)
+}
+
+// TODO short doc
+#[doc(hidden)]
 fn format_elapsed(elapsed: Duration) -> String {
     // null out everything below seconds
     let elapsed = Duration::from_secs(elapsed.as_secs());
@@ -117,6 +143,8 @@ fn format_elapsed(elapsed: Duration) -> String {
     humantime::format_duration(elapsed).to_string()
 }
 
+// TODO short doc
+#[doc(hidden)]
 fn format_now(now: OffsetDateTime) -> String {
     // define format
     const FORMAT: &[FormatItem<'_>] = format_description!("[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory][offset_minute]");

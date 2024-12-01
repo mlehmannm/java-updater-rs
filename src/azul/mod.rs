@@ -12,7 +12,6 @@ mod installation;
 
 use self::installation::*;
 use crate::args::*;
-use crate::colors::*;
 use crate::config::InstallationConfig;
 use std::env;
 use std::path::{self, Path};
@@ -33,14 +32,7 @@ const ARCHIVE_TYPE: &str = "zip";
 
 /// Prepare and set up the installation.
 pub(crate) fn setup(basedir: &Path, args: &Args, config: InstallationConfig) {
-    let mut installation = match Installation::from_config(basedir, config) {
-        Ok(installation) => installation,
-        Err(err) => {
-            let err_str = ATTENTION_COLOR.paint(format!("err = {err:?}"));
-            eprintln!("Failed to setup installation!\r\n\t{err_str}");
-            return;
-        }
-    };
+    let mut installation = Installation::from_config(basedir, config);
 
     installation //
         .dry_run(args.dry_run) //

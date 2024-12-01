@@ -98,7 +98,7 @@ where
 {
     struct UintOrString(PhantomData<fn() -> String>);
 
-    impl<'de> Visitor<'de> for UintOrString {
+    impl Visitor<'_> for UintOrString {
         type Value = String;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

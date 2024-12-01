@@ -98,7 +98,7 @@ impl<'a> SimpleVarResolver<'a> {
     }
 }
 
-impl<'a> VarResolver for SimpleVarResolver<'a> {
+impl VarResolver for SimpleVarResolver<'_> {
     fn resolve_var(&self, v: &str) -> Result<String, VarError> {
         match self.vars.get(v) {
             Some(value) => Ok(value.clone()),

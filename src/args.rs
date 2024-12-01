@@ -16,6 +16,9 @@ pub(crate) struct Args {
     /// Suppress unnecessary information
     #[clap(short = 'q', long, action)]
     pub(crate) quiet: bool,
+    /// Number of threads to use
+    #[clap(long, value_name = "threads", value_parser)]
+    pub(crate) threads: Option<usize>,
     /// Change level of verbosity (apply multiple times to increase level)
     #[clap(short, long, action = clap::ArgAction::Count)]
     pub(crate) verbose: u8,
