@@ -16,10 +16,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      # run locally with act --var SIMULATE=x to skip this step
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+        # run locally with act --var SIMULATE=x to skip this step
         if: ${{ vars.SIMULATE == '' }}
         run: gh release create ${{ github.ref_name }}
   assets:
@@ -76,21 +76,32 @@ jobs:
         run: ${{ matrix.command }} build --release --target ${{ matrix.target }}
       # 7z is available on all runners.
       # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#preinstalled-software
+      - name: Create tar.gz archive
+        id: archive-tar-gz
+        if: matrix.archive == '.tar.gz'
+        shell: bash
+        run: |
+          DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
+          mkdir "${DIRECTORY}"
+          cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
+          tar -zcvf "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
+          echo "ARCHIVE_PATH=${DIRECTORY}${{ matrix.archive }}" >> ${GITHUB_ENV}
       - name: Create zip archive
-        id: archive
+        id: archive-zip
+        if: matrix.archive == '.zip'
         shell: bash
         run: |
           DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
           mkdir "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
-          echo "path=${DIRECTORY}${{ matrix.archive }}" >> "${GITHUB_OUTPUT}"
-      # run locally with act --var SIMULATE=x to skip this step
+          echo "ARCHIVE_PATH=${DIRECTORY}${{ matrix.archive }}" >> ${GITHUB_ENV}
       - name: Upload artifacts
         env:
           GH_TOKEN: ${{ github.token }}
+        # run locally with act --var SIMULATE=x to skip this step
         if: ${{ vars.SIMULATE == '' }}
-        run: gh release upload ${{ github.ref_name }} ${{ steps.archive.outputs.path }}
+        run: gh release upload ${{ github.ref_name }} ${{ env.ARCHIVE_PATH }}
 
 permissions:
   contents: write
