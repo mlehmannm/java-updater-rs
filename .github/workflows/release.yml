@@ -14,8 +14,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - env:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create release
+        env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create ${{ github.ref_name }}
   assets:
@@ -57,12 +59,19 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - run: cargo install cross --git https://github.com/cross-rs/cross
-      - env:
+      - name: Install cross
+        env:
+          # Reset to disable failure on clippy warnings.
+          RUSTFLAGS: ""
+        run: cargo install cross --git https://github.com/cross-rs/cross
+      - name: Build
+        env:
           RUSTFLAGS: -Zon-broken-pipe=kill
         run: ${{ matrix.command }} build --release --target ${{ matrix.target }}
       # 7z is available on all runners.
@@ -77,7 +86,8 @@ jobs:
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
           echo "path=${DIRECTORY}${{ matrix.archive }}" >> "${GITHUB_OUTPUT}"
-      - env:
+      - name: Upload artifacts
+        env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload ${{ github.ref_name }} ${{ steps.archive.outputs.path }}
 
