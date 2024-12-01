@@ -10,7 +10,7 @@ publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
 rust-version = "1.79.0"
-version = "0.3.2-dev"
+version = "0.3.2"
 
 [[bin]]
 name = "java-updater"
