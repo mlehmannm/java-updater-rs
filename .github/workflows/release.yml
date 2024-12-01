@@ -16,9 +16,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # run locally with act --var SIMULATE=x to skip this step
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+        if: ${{ vars.SIMULATE == '' }}
         run: gh release create ${{ github.ref_name }}
   assets:
     needs: release
@@ -62,17 +64,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: ${{ matrix.target }}
+          toolchain: "1.82.0" # cross has difficulties with >1.82.0
       - name: Install cross
-        env:
-          # Reset to disable failure on clippy warnings.
-          RUSTFLAGS: ""
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build
-        env:
-          RUSTFLAGS: -Zon-broken-pipe=kill
+        # env:
+        #   RUSTFLAGS: -Zon-broken-pipe=kill
         run: ${{ matrix.command }} build --release --target ${{ matrix.target }}
       # 7z is available on all runners.
       # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#preinstalled-software
@@ -86,9 +86,11 @@ jobs:
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
           echo "path=${DIRECTORY}${{ matrix.archive }}" >> "${GITHUB_OUTPUT}"
+      # run locally with act --var SIMULATE=x to skip this step
       - name: Upload artifacts
         env:
           GH_TOKEN: ${{ github.token }}
+        if: ${{ vars.SIMULATE == '' }}
         run: gh release upload ${{ github.ref_name }} ${{ steps.archive.outputs.path }}
 
 permissions:

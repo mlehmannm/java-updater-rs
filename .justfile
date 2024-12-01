@@ -111,6 +111,7 @@ install-prereqs: install-prereqs-cargo
 # install prerequisites (windows)
 [windows]
 install-prereqs: install-prereqs-cargo
+    -winget install nektos.act
     -winget update --id nektos.act
 
 # install prerequisites
