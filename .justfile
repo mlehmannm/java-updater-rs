@@ -13,7 +13,7 @@ set windows-shell := ["pwsh.exe", "-NoLogo", "-Command"]
 CHANNEL := ''
 #CHANNEL := '+stable'
 #CHANNEL := '+nightly'
-#CHANNEL := '+1.79'
+#CHANNEL := '+1.84'
 
 # configure log
 export RUST_LOG := 'trace,cargo=warn,hyper=warn,reqwest=warn'

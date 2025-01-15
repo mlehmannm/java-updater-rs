@@ -9,8 +9,8 @@ name = "java-updater"
 publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
-rust-version = "1.79.0"
-version = "0.3.0"
+rust-version = "1.84.0"
+version = "0.4.0-dev"
 
 [[bin]]
 name = "java-updater"
@@ -64,11 +64,11 @@ zip = "2.2"
 vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
-windows-registry = "0.3"
+windows-registry = "0.4"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.14"
+tempfile = "3.15"
 test-log = "0.2"
 
 [profile.release]
@@ -80,7 +80,7 @@ strip = true
 
 [package.metadata.winres]
 FileDescription = "Java Updater"
-LegalCopyright = "Copyright © 2024 Marco Lehmann-Mörz"
+LegalCopyright = "Copyright © 2024-2025 Marco Lehmann-Mörz"
 OriginalFilename = "java-updater.exe"
 
 [lints.clippy] # uncomment from time to time and run `just clippy`

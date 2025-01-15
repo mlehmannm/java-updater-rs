@@ -14,7 +14,7 @@ _TBW_: describe yaml
 
 - `JU_CONFIG_ARCH`
 - `JU_CONFIG_TYPE`
-- `JU_CONFI sssG_VENDOR`
+- `JU_CONFIG_VENDOR`
 - `JU_CONFIG_VERSION`
 
 **NOTE:** The variables used for the directory are not prefixed with `env.`!

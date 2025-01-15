@@ -1,7 +1,6 @@
 ---
 aliases:
   directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
-  enabled: &enabled true
   # Fedora: sudo dnf install libnotify
   # Debian: sudo apt install notify-send
   notify-on-failure: &notify-on-failure
@@ -18,12 +17,13 @@ aliases:
 settings:
 
 installations:
+
   # Azul
 
   - vendor: azul
     architecture: i686
     directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
-    enabled: *enabled
+    # enabled: false
     type: jdk
     version: "8"
     on-failure:
@@ -35,7 +35,7 @@ installations:
 
   - vendor: eclipse
     directory: *directory
-    enabled: *enabled
+    # enabled: false
     type: jdk
     version: 17
     on-failure:

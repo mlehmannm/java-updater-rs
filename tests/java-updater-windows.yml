@@ -1,7 +1,6 @@
 ---
 aliases:
   directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
-  enabled: &enabled true
   # https://github.com/vaskovsky/notify-send
   notify-on-failure: &notify-on-failure
     path: D:\dev\src\notify-send\notify-send.exe
@@ -17,12 +16,13 @@ aliases:
     directory: "${env.windir}"
 
 installations:
+
   # Azul
 
   - vendor: azul
     architecture: i686
     directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
-    enabled: *enabled
+    # enabled: false
     type: jdk
     version: "8"
     on-failure:
@@ -34,7 +34,7 @@ installations:
 
   - vendor: eclipse
     directory: *directory
-    enabled: *enabled
+    # enabled: false
     type: jdk
     version: 17
     on-failure:
