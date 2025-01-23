@@ -20,16 +20,16 @@ pub(crate) struct Version {
 
 impl Default for Version {
     fn default() -> Self {
-        let pkg_name = env!("CARGO_PKG_NAME");
-        let pkg_version = env!("CARGO_PKG_VERSION");
-        let git_describe = env!("VERGEN_GIT_DESCRIBE");
-        let rustc_semver = env!("VERGEN_RUSTC_SEMVER");
+        let cargo_pkg_name = env!("CARGO_PKG_NAME");
+        let cargo_pkg_version = env!("CARGO_PKG_VERSION");
+        let vergen_git_describe = env!("VERGEN_GIT_DESCRIBE");
+        let vergen_rustc_semver = env!("VERGEN_RUSTC_SEMVER");
 
         Self {
-            pkg_name: pkg_name.to_string(),
-            pkg_version: pkg_version.to_string(),
-            git_describe: git_describe.to_string(),
-            rustc_semver: rustc_semver.to_string(),
+            git_describe: vergen_git_describe.to_string(),
+            pkg_name: cargo_pkg_name.to_string(),
+            pkg_version: cargo_pkg_version.to_string(),
+            rustc_semver: vergen_rustc_semver.to_string(),
         }
     }
 }
@@ -44,10 +44,26 @@ impl fmt::Display for Version {
 /// String conversion.
 impl From<&Version> for String {
     fn from(value: &Version) -> String {
+        let git_describe = &value.git_describe;
         let pkg_name = &value.pkg_name;
         let pkg_version = &value.pkg_version;
-        let git_describe = &value.git_describe;
         let rustc_semver = &value.rustc_semver;
         format!("{pkg_name} {pkg_version} (git/{git_describe}) (rustc/{rustc_semver})")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use test_log::test;
+
+    #[test]
+    fn default() {
+        let version = Version::default();
+        assert_eq!(version.git_describe, env!("VERGEN_GIT_DESCRIBE"));
+        assert_eq!(version.pkg_name, env!("CARGO_PKG_NAME"));
+        assert_eq!(version.pkg_version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(version.rustc_semver, env!("VERGEN_RUSTC_SEMVER"));
     }
 }
