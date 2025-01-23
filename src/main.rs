@@ -10,6 +10,7 @@ mod meta;
 #[cfg(feature = "notify")]
 mod notify;
 mod package;
+mod util;
 mod vars;
 mod vendor;
 mod version;
@@ -20,9 +21,11 @@ compile_error!("At least one vendor must be set.");
 use crate::args::Args;
 use crate::colors::*;
 use crate::config::*;
+use crate::util::*;
 use crate::version::Version;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use threadpool::ThreadPool;
@@ -100,11 +103,19 @@ fn internal_main() -> anyhow::Result<()> {
     // start processing installations
     let thread_pool = ThreadPool::new(num_threads(args.threads));
     let args = Arc::new(args);
+    let num_installations = config.installations.len();
+    let processed = Arc::new(AtomicUsize::new(0));
     for installation in config.installations {
         let basedir = basedir.to_path_buf();
         let args = args.clone();
+        let processed = processed.clone();
         thread_pool.execute(move || {
             setup(&basedir, &args, installation);
+
+            // update window title
+            let i = processed.fetch_add(1, Ordering::Relaxed);
+            let window_title = format!("{i}/{num_installations} installs");
+            set_window_title(&window_title);
         });
     }
     thread_pool.join();
