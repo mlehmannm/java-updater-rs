@@ -65,10 +65,10 @@ impl MetadataRequest {
         let Some(minor) = version["minor"].as_u64() else {
             return Err(anyhow!("minor part not present in 'version'"));
         };
-        let Some(build) = version["build"].as_u64() else {
-            return Err(anyhow!("build part not present in 'version'"));
+        let Some(security) = version["security"].as_u64() else {
+            return Err(anyhow!("security part not present in 'version'"));
         };
-        let version = Version::new(major, minor, build);
+        let version = Version::new(major, minor, security);
 
         Ok(MetadataResponse {
             checksum: checksum.to_string(),
