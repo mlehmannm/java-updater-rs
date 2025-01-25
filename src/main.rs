@@ -10,7 +10,7 @@ mod meta;
 #[cfg(feature = "notify")]
 mod notify;
 mod package;
-mod util;
+mod terminal;
 mod vars;
 mod vendor;
 mod version;
@@ -21,7 +21,7 @@ compile_error!("At least one vendor must be set.");
 use crate::args::Args;
 use crate::colors::*;
 use crate::config::*;
-use crate::util::*;
+use crate::terminal::*;
 use crate::version::Version;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
@@ -110,15 +110,23 @@ fn internal_main() -> anyhow::Result<()> {
         let args = args.clone();
         let processed = processed.clone();
         thread_pool.execute(move || {
-            setup(&basedir, &args, installation);
-
             // update window title
             let i = processed.fetch_add(1, Ordering::Relaxed);
             let window_title = format!("{i}/{num_installations} installs");
             set_window_title(&window_title);
+
+            // update window progress
+            let progress: usize = i * 100 / num_installations;
+            set_windows_progress(Some(progress));
+
+            // setup installation
+            setup(&basedir, &args, installation);
         });
     }
     thread_pool.join();
+
+    // reset window progress
+    set_windows_progress(None);
 
     // print some statistics
     let elapsed = start.elapsed();
