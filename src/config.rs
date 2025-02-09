@@ -11,7 +11,6 @@ use std::fmt;
 use std::fs::File;
 use std::marker::PhantomData;
 use std::path::Path;
-use tracing::instrument;
 
 /// Name of the default configuration file.
 pub(crate) const CONFIG_FILENAME: &str = "java-updater.yml";
@@ -26,7 +25,7 @@ pub(crate) struct Config {
 
 impl Config {
     /// Loads the configuration from the given filename.
-    #[instrument(err, level = "trace")]
+    #[tracing::instrument(err, level = "trace")]
     pub(crate) fn load_from_file<P>(filename: P) -> anyhow::Result<Self>
     where
         P: AsRef<Path> + std::fmt::Debug,
@@ -135,11 +134,11 @@ impl InstallationConfig {
         simple_var_resolver.insert("JU_CONFIG_VERSION", self.version.to_string());
         simple_var_resolver.insert("JU_OS", env::consts::OS.to_string());
         let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(EnvVarResolver), Box::new(AsIsVarResolver)];
-        let vars_resolver = VarExpander::new(var_resolvers);
+        let var_expander = VarExpander::new(var_resolvers);
 
         // expand all known variables and leave unknown variables as-is
         let directory = &self.directory;
-        vars_resolver.expand(directory).unwrap_or(Cow::Borrowed(directory)).to_string()
+        var_expander.expand(directory).unwrap_or(Cow::Borrowed(directory)).to_string()
     }
 }
 

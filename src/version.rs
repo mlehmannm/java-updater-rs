@@ -2,8 +2,6 @@
 //!
 //! This module contains the version information.
 
-use std::fmt;
-
 /// Structure to hold the version information.
 #[derive(Debug)]
 pub(crate) struct Version {
@@ -35,8 +33,8 @@ impl Default for Version {
 }
 
 /// Display this Version.
-impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", String::from(self))
     }
 }

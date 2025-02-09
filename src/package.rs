@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use tracing::{error, instrument, trace, warn};
+use tracing::{error, trace, warn};
 
 /// Struct to hold all necessary data to download and unpack a java package.
 pub(crate) struct Package {
@@ -36,7 +36,7 @@ impl Package {
     }
 
     // Download the package.
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn download(&self) -> anyhow::Result<PathBuf> {
         let metadata_dir = self.path.join(METADATA_DIR);
         let mut dest = metadata_dir.join(&self.checksum);
@@ -74,7 +74,7 @@ impl Package {
 
     // Unpacks the package and replaces the old installation with the new installation.
     #[cfg(not(windows))]
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn unpack(&self, pkg: &Path) -> anyhow::Result<()> {
         use flate2::read::GzDecoder;
         use tar::Archive;
@@ -199,7 +199,7 @@ impl Package {
     // Unpacks the package and replaces the old installation with the new installation.
     #[allow(clippy::permissions_set_readonly_false)]
     #[cfg(windows)]
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn unpack(&self, pkg: &Path) -> anyhow::Result<()> {
         let tmp = self.path.join(METADATA_DIR).join(&self.checksum);
 

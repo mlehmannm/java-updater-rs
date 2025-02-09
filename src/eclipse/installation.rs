@@ -11,7 +11,7 @@ use anyhow::anyhow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use tracing::{instrument, trace, warn};
+use tracing::{trace, warn};
 
 /// The installation contains everything to materialise a java package (JDK or JRE) to disc.
 #[derive(Debug)]
@@ -98,7 +98,7 @@ impl Installation {
     }
 
     // Set up the installation internally.
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn _setup(&self, metadata: Option<Metadata>) -> anyhow::Result<Option<Metadata>> {
         let latest = self.query_latest()?;
         let download = if let Some(ref metadata) = metadata {
@@ -133,7 +133,7 @@ impl Installation {
     }
 
     // Load local metadata.
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn load_metadata(&self) -> anyhow::Result<Metadata> {
         let filename = self.path.join(METADATA_DIR).join(METADATA_FILE);
         let metadata = Metadata::load(filename)?;
@@ -145,7 +145,7 @@ impl Installation {
     }
 
     // Query latest metadata.
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn query_latest(&self) -> anyhow::Result<MetadataResponse> {
         let req = MetadataRequest {
             arch: self.config.architecture.clone(),
@@ -157,7 +157,7 @@ impl Installation {
     }
 
     // Saves local metadata.
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn save_metadata(&self, metadata: &Metadata) -> anyhow::Result<()> {
         let metadata_dir = self.path.join(METADATA_DIR);
         fs::create_dir_all(&metadata_dir)?;
@@ -167,7 +167,7 @@ impl Installation {
 
     // Notify in case of failure.
     #[cfg(feature = "notify")]
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
         if self.config.on_failure.is_empty() {
             return;
@@ -214,7 +214,7 @@ impl Installation {
 
     // Notify in case of success.
     #[cfg(feature = "notify")]
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn notify_on_success(&self, old: Option<&semver::Version>, new: &semver::Version) {
         if self.config.on_success.is_empty() {
             return;
@@ -261,7 +261,7 @@ impl Installation {
 
     // Notify in case of update.
     #[cfg(feature = "notify")]
-    #[instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "trace", skip(self))]
     fn notify_on_update(&self, old: Option<&semver::Version>, new: &semver::Version) {
         if self.config.on_update.is_empty() {
             return;

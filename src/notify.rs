@@ -6,7 +6,7 @@ use crate::vars::VarExpander;
 use crate::NotifyCommandConfig;
 use std::collections::HashMap;
 use std::process::{Command, Stdio};
-use tracing::*;
+use tracing::error;
 
 /// A list specifying general categories of notification.
 #[derive(Clone, Debug)]
@@ -70,7 +70,7 @@ impl NotifyCommand {
     }
 
     // Executes the notify command internally.
-    #[instrument(err, level = "trace")]
+    #[tracing::instrument(err, level = "trace")]
     fn _execute(&self, var_expander: &VarExpander) -> anyhow::Result<()> {
         // prepare command
         let path = var_expander.expand(&self.path)?;

@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-use tracing::instrument;
 
 /// Name of the metadata directory within the installation directory.
 pub(crate) const METADATA_DIR: &str = ".java-updater";
@@ -49,7 +48,7 @@ impl Metadata {
     }
 
     /// Loads the `Metadata` from the given filename.
-    #[instrument(err(level = "trace"), level = "trace")]
+    #[tracing::instrument(err(level = "trace"), level = "trace")]
     pub(crate) fn load<P>(filename: P) -> Result<Self>
     where
         P: AsRef<Path> + std::fmt::Debug,
@@ -64,7 +63,7 @@ impl Metadata {
     }
 
     /// Saves the `Metadata` to the given filename.
-    #[instrument(err(level = "trace"), level = "trace")]
+    #[tracing::instrument(err(level = "trace"), level = "trace")]
     pub(crate) fn save<P>(&self, filename: P) -> Result<()>
     where
         P: AsRef<Path> + std::fmt::Debug,

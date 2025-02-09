@@ -6,12 +6,9 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env;
 use std::fmt;
-use std::rc::Rc;
-use thiserror::Error;
-use tracing::instrument;
 
 /// The error type for operations interacting with variables.
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub(crate) enum VarError {
     /// The specified variable is not present.
     #[error("variable '{0}' not found")]
@@ -53,14 +50,14 @@ impl VarResolver for EnvVarResolver {
 /// [`VarResolver`] implementation that combines other variable resolvers.
 #[derive(Debug)]
 pub(crate) struct CombinedVarResolver {
-    resolvers: Vec<Rc<dyn VarResolver>>,
+    resolvers: Vec<Box<dyn VarResolver>>,
 }
 
 impl CombinedVarResolver {
     /// Constructs a new `CombinedVarResolver` with the given variable resolvers.
     pub(crate) fn new<I>(resolvers: I) -> Self
     where
-        I: IntoIterator<Item = Rc<dyn VarResolver>>,
+        I: IntoIterator<Item = Box<dyn VarResolver>>,
     {
         Self {
             resolvers: Vec::from_iter(resolvers),
@@ -112,7 +109,7 @@ impl VarResolver for SimpleVarResolver<'_> {
 pub(crate) struct VarExpander {
     // The array with variable resolvers.
     #[doc(hidden)]
-    resolvers: Vec<Box<dyn VarResolver>>,
+    resolver: CombinedVarResolver,
 }
 
 impl VarExpander {
@@ -122,54 +119,44 @@ impl VarExpander {
         I: IntoIterator<Item = Box<dyn VarResolver>>,
     {
         Self {
-            resolvers: Vec::from_iter(resolvers),
+            resolver: CombinedVarResolver::new(resolvers),
         }
     }
 
     /// Expands all known variables in the given string.
-    #[instrument(level = "trace", ret)]
+    #[tracing::instrument(level = "trace", ret)]
     pub(crate) fn expand<'a, S>(&self, s: &'a S) -> Result<Cow<'a, str>, VarError>
     where
         S: ?Sized + AsRef<str> + fmt::Debug,
     {
-        let resolved = shellexpand::env_with_context(s, |s| self.resolve(s));
-        resolved.map_err(|err| err.cause)
+        shellexpand::env_with_context(s, |s| self.resolve(s)) //
+            .map_err(|err| err.cause)
     }
 
     // Provides the context for `expand`.
     #[doc(hidden)]
     fn resolve(&self, v: &str) -> Result<Option<String>, VarError> {
-        for r in &self.resolvers {
-            let v = r.resolve_var(v);
-            match v {
-                Ok(v) => return Ok(Some(v)),
-                _ => continue,
-            };
-        }
-
-        Err(VarError::NotPresent(v.to_owned()))
+        self.resolver.resolve_var(v).map(Option::Some)
     }
 }
 
 /// Expands all known variables in the given string with the given variable resolvers.
-#[instrument(level = "trace", ret, skip(resolvers))]
+#[tracing::instrument(level = "trace", ret, skip(resolvers))]
 pub(crate) fn expand<'a, S, I>(s: &'a S, mut resolvers: I) -> Result<Cow<'a, str>, VarError>
 where
     S: ?Sized + AsRef<str> + fmt::Debug,
     I: Iterator<Item = &'a dyn VarResolver>,
 {
-    let resolved = shellexpand::env_with_context(s, |s| {
+    shellexpand::env_with_context(s, |s| {
         for r in resolvers.by_ref() {
-            let v = r.resolve_var(s);
-            match v {
-                Ok(v) => return Ok(Some(v)),
-                _ => continue,
-            };
+            if let Ok(value) = r.resolve_var(s) {
+                return Ok(Some(value));
+            }
         }
 
         Err(VarError::NotPresent(s.to_owned()))
-    });
-    resolved.map_err(|err| err.cause)
+    })
+    .map_err(|err| err.cause)
 }
 
 #[cfg(test)]

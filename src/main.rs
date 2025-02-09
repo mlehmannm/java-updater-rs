@@ -17,10 +17,11 @@ mod version;
 #[cfg(not(any(feature = "azul", feature = "eclipse")))]
 compile_error!("At least one vendor must be set.");
 
-use crate::args::Args;
+use crate::args::*;
 use crate::config::*;
 use crate::terminal::*;
-use crate::version::Version;
+use crate::vendor::*;
+use crate::version::*;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -30,9 +31,9 @@ use threadpool::ThreadPool;
 use time::format_description::FormatItem;
 use time::macros::format_description;
 use time::{OffsetDateTime, UtcOffset};
-use tracing::{level_filters::*, *};
+use tracing::level_filters::LevelFilter;
+use tracing::{debug, trace};
 use tracing_subscriber::EnvFilter;
-use vendor::Vendor;
 
 // Exit code used in case there were no errors.
 #[doc(hidden)]
