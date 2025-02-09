@@ -1,10 +1,10 @@
 use super::api::*;
 use super::*;
-use crate::colors::*;
 use crate::meta::*;
 #[cfg(feature = "notify")]
 use crate::notify::*;
 use crate::package::*;
+use crate::terminal::*;
 use crate::vars::*;
 use crate::vendor::*;
 use anyhow::anyhow;

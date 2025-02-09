@@ -2,7 +2,6 @@ mod args;
 #[cfg(feature = "azul")]
 mod azul;
 mod checksum;
-mod colors;
 mod config;
 #[cfg(feature = "eclipse")]
 mod eclipse;
@@ -19,7 +18,6 @@ mod version;
 compile_error!("At least one vendor must be set.");
 
 use crate::args::Args;
-use crate::colors::*;
 use crate::config::*;
 use crate::terminal::*;
 use crate::version::Version;
