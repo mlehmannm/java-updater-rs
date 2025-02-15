@@ -24,7 +24,7 @@ pub(crate) struct NotifyCommand {
     args: Vec<String>,
     // The working directory for the executable.
     directory: Option<String>,
-    // The envorinment for the executable.
+    // The environment for the executable.
     env: HashMap<String, String>,
     // The kind of notification.
     kind: Option<NotifyKind>,
@@ -60,7 +60,7 @@ impl NotifyCommand {
 
     /// Executes (and consumes) the notify command.
     pub(crate) fn execute(self, var_expander: &VarExpander) {
-        if let Err(err) = self._execute(var_expander) {
+        if let Err(err) = self.execute_inner(var_expander) {
             match self.kind {
                 Some(NotifyKind::Failure) => error!(?err, "failed to execute notify (on failure) command"),
                 Some(NotifyKind::Success) => error!(?err, "failed to execute notify (on success) command"),
@@ -71,7 +71,7 @@ impl NotifyCommand {
 
     // Executes the notify command internally.
     #[tracing::instrument(err, level = "trace")]
-    fn _execute(&self, var_expander: &VarExpander) -> anyhow::Result<()> {
+    fn execute_inner(&self, var_expander: &VarExpander) -> anyhow::Result<()> {
         // prepare command
         let path = var_expander.expand(&self.path)?;
         let mut cmd = Command::new(path.as_ref());

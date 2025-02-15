@@ -24,6 +24,7 @@ use crate::vendor::*;
 use crate::version::*;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -119,7 +120,7 @@ fn internal_main() -> anyhow::Result<()> {
             set_windows_progress(Some(progress));
 
             // setup installation
-            setup(&basedir, &args, installation);
+            setup(&basedir, &args, Rc::new(installation));
         });
     }
     thread_pool.join();
@@ -210,21 +211,21 @@ fn init_tracing(args: &Args) {
 }
 
 // Set up installation.
-fn setup(basedir: &Path, args: &Args, config: InstallationConfig) {
-    let path = basedir.join(config.expand_directory());
+fn setup(basedir: &Path, args: &Args, config: Rc<InstallationConfig>) {
+    let path = basedir.join(InstallationConfig::expand_directory(&config));
     let path = path::absolute(&path).unwrap_or(path);
     let path = PATH_COLOR.paint(path.to_string_lossy());
 
     if !config.enabled {
         let not = ATTENTION_COLOR.paint("NOT");
-        println!("{not} processing installation at {path} -> disabled");
+        println!("{not} processing installation at {path} \u{2192} disabled");
         return;
     }
 
     let vendor = config.vendor.as_str();
     let Ok(vendor) = Vendor::try_from(vendor) else {
         let not = ATTENTION_COLOR.paint("NOT");
-        println!("{not} processing installation at {path} -> unsupported vendor '{vendor}'");
+        println!("{not} processing installation at {path} \u{2192} unsupported vendor '{vendor}'");
         return;
     };
     trace!(?vendor);

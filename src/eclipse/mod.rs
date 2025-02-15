@@ -14,6 +14,7 @@ use crate::args::*;
 use crate::config::InstallationConfig;
 use std::env;
 use std::path::{self, Path};
+use std::rc::Rc;
 
 // Base URL for the API endpoint.
 #[doc(hidden)]
@@ -30,7 +31,7 @@ const ARCHIVE_TYPE: &str = "tar.gz";
 const ARCHIVE_TYPE: &str = "zip";
 
 /// Prepare and set up the installation.
-pub(crate) fn setup(basedir: &Path, args: &Args, config: InstallationConfig) {
+pub(crate) fn setup(basedir: &Path, args: &Args, config: Rc<InstallationConfig>) {
     let mut installation = Installation::from_config(basedir, config);
 
     installation //

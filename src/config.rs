@@ -11,6 +11,7 @@ use std::fmt;
 use std::fs::File;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::rc::Rc;
 
 /// Name of the default configuration file.
 pub(crate) const CONFIG_FILENAME: &str = "java-updater.yml";
@@ -124,20 +125,14 @@ where
 
 impl InstallationConfig {
     /// Returns [`Installation::directory`] where all known variables are expanded.
-    pub(crate) fn expand_directory(&self) -> String {
-        // setup variable resolver(s)
-        let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("JU_ARCH", env::consts::ARCH.to_string());
-        simple_var_resolver.insert("JU_CONFIG_ARCH", self.architecture.to_string());
-        simple_var_resolver.insert("JU_CONFIG_TYPE", self.package_type.to_string());
-        simple_var_resolver.insert("JU_CONFIG_VENDOR", self.vendor.to_string());
-        simple_var_resolver.insert("JU_CONFIG_VERSION", self.version.to_string());
-        simple_var_resolver.insert("JU_OS", env::consts::OS.to_string());
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(EnvVarResolver), Box::new(AsIsVarResolver)];
+    pub(crate) fn expand_directory(config: &Rc<Self>) -> String {
+        // setup variable resolver(s) and expander
+        let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
+        let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![config.clone(), Rc::new(env_var_resolver), Rc::new(RustEnvVarResolver), Rc::new(AsIsVarResolver)];
         let var_expander = VarExpander::new(var_resolvers);
 
         // expand all known variables and leave unknown variables as-is
-        let directory = &self.directory;
+        let directory = &config.directory;
         var_expander.expand(directory).unwrap_or(Cow::Borrowed(directory)).to_string()
     }
 }
@@ -146,6 +141,7 @@ impl VarResolver for InstallationConfig {
     fn resolve_var(&self, var_name: &str) -> Result<String, VarError> {
         let value = match var_name {
             "JU_CONFIG_ARCH" => &self.architecture,
+            "JU_CONFIG_DIRECTORY" => &self.directory,
             "JU_CONFIG_TYPE" => &self.package_type,
             "JU_CONFIG_VENDOR" => &self.vendor,
             "JU_CONFIG_VERSION" => &self.version,
@@ -174,6 +170,7 @@ pub(crate) struct NotifyCommandConfig {
 mod tests {
 
     use super::*;
+    use std::env;
     use test_log::test;
 
     #[test]
@@ -203,25 +200,73 @@ mod tests {
     }
 
     #[test]
-    fn resolve_directory() {
+    fn expand_directory() {
         let architecture = env::consts::ARCH.to_string();
         let os = env::consts::OS.to_string();
+        let directory = "${JU_CONFIG_ARCH}/${JU_CONFIG_TYPE}/${JU_CONFIG_VENDOR}/${JU_CONFIG_VERSION}/${JU_OS}/${JU_UNSUPPORTED}".to_string();
         let config = InstallationConfig {
             architecture: architecture.clone(),
-            directory: "${JU_CONFIG_ARCH}/\
-                        ${JU_CONFIG_TYPE}/\
-                        ${JU_CONFIG_VENDOR}/\
-                        ${JU_CONFIG_VERSION}/\
-                        ${JU_OS}/\
-                        ${JU_NOT_SUPPORTED}"
-                .to_string(),
+            directory: directory.clone(),
             package_type: "jdk".to_string(),
             vendor: "eclipse".to_string(),
-            version: "8".to_string(),
+            version: "17".to_string(),
             ..Default::default()
         };
-        let actual = config.expand_directory();
-        let expected = format!("{architecture}/jdk/eclipse/8/{os}/${{JU_NOT_SUPPORTED}}");
+        let config = Rc::new(config);
+        let actual = InstallationConfig::expand_directory(&config);
+        let expected = format!("{architecture}/jdk/eclipse/17/{os}/${{JU_UNSUPPORTED}}");
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn resolve_vars() {
+        let architecture = env::consts::ARCH.to_string();
+        let directory = "${JU_CONFIG_ARCH}/${JU_CONFIG_TYPE}/${JU_CONFIG_VENDOR}/${JU_CONFIG_VERSION}/${JU_OS}".to_string();
+        let package_type = "jdk".to_string();
+        let vendor = "eclipse".to_string();
+        let version = "17".to_string();
+        let config = InstallationConfig {
+            architecture: architecture.clone(),
+            directory: directory.clone(),
+            package_type: package_type.clone(),
+            vendor: vendor.clone(),
+            version: version.clone(),
+            ..Default::default()
+        };
+        assert_eq!(Ok(architecture), config.resolve_var("JU_CONFIG_ARCH"));
+        assert_eq!(Ok(package_type), config.resolve_var("JU_CONFIG_TYPE"));
+        assert_eq!(Ok(directory), config.resolve_var("JU_CONFIG_DIRECTORY"));
+        assert_eq!(Ok(vendor), config.resolve_var("JU_CONFIG_VENDOR"));
+        assert_eq!(Ok(version), config.resolve_var("JU_CONFIG_VERSION"));
+    }
+
+    #[test]
+    fn expand_vars() {
+        let architecture = env::consts::ARCH.to_string();
+        let os = env::consts::OS.to_string();
+        let directory = "${JU_CONFIG_ARCH}/${JU_CONFIG_TYPE}/${JU_CONFIG_VENDOR}/${JU_CONFIG_VERSION}/${JU_OS}".to_string();
+        let package_type = "jdk".to_string();
+        let vendor = "eclipse".to_string();
+        let version = "17".to_string();
+        let expanded_directory = format!("{architecture}/{package_type}/{vendor}/{version}/{os}");
+        let config = InstallationConfig {
+            architecture: architecture.clone(),
+            directory: directory.clone(),
+            package_type: package_type.clone(),
+            vendor: vendor.clone(),
+            version: version.clone(),
+            ..Default::default()
+        };
+
+        let mut simple_var_resolver = SimpleVarResolver::new();
+        simple_var_resolver.insert("JU_OS", os);
+        let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(config)];
+        let var_expander = VarExpander::new(var_resolvers);
+
+        assert_eq!(Ok(architecture), var_expander.expand("${JU_CONFIG_ARCH}").map(Cow::into_owned));
+        assert_eq!(Ok(package_type), var_expander.expand("${JU_CONFIG_TYPE}").map(Cow::into_owned));
+        assert_eq!(Ok(expanded_directory), var_expander.expand("${JU_CONFIG_DIRECTORY}").map(Cow::into_owned));
+        assert_eq!(Ok(vendor), var_expander.expand("${JU_CONFIG_VENDOR}").map(Cow::into_owned));
+        assert_eq!(Ok(version), var_expander.expand("${JU_CONFIG_VERSION}").map(Cow::into_owned));
     }
 }

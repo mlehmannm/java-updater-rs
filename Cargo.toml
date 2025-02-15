@@ -50,7 +50,7 @@ shellexpand = "3.1"
 thiserror = "2"
 threadpool = "1.8"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
-tracing = { version = "0.1", features = ["log"] }
+tracing = { version = "0.1", features = ["log", "release_max_level_trace"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [target.'cfg(not(windows))'.dependencies]
@@ -68,7 +68,7 @@ windows-registry = "0.4"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.16"
+tempfile = "3.17"
 test-log = "0.2"
 
 [profile.release]

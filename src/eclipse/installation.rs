@@ -1,5 +1,6 @@
 use super::api::*;
 use super::*;
+use crate::config::*;
 use crate::meta::*;
 #[cfg(feature = "notify")]
 use crate::notify::*;
@@ -25,12 +26,12 @@ pub(super) struct Installation {
 
 impl Installation {
     // Creates a new [Installation] out of the given [InstallationConfig].
-    pub(super) fn from_config(basedir: &Path, config: InstallationConfig) -> Self {
-        let path = basedir.join(config.expand_directory());
+    pub(super) fn from_config(basedir: &Path, config: Rc<InstallationConfig>) -> Self {
+        let path = basedir.join(InstallationConfig::expand_directory(&config));
         let path = path::absolute(&path).unwrap_or(path);
 
         Self {
-            config: Rc::new(config),
+            config,
             dry_run: false,
             os: env::consts::OS.to_string(), // TODO do we really need this here?
             path,
@@ -54,7 +55,7 @@ impl Installation {
         let old_version_str = INFO_COLOR.paint(old_version_str);
         println!("Processing installation at {path} [{old_version_str}]");
 
-        match self._setup(metadata.ok()) {
+        match self.setup_inner(metadata.ok()) {
             Ok(Some(metadata)) => {
                 let old_version = old_version.as_ref();
                 let new_version = &metadata.version;
@@ -62,9 +63,9 @@ impl Installation {
                     let new_version = INFO_COLOR.paint(new_version.to_string());
                     if self.dry_run {
                         let not = ATTENTION_COLOR.paint("NOT");
-                        println!("dry-run: {not} processing installation at {path} [{old_version_str} -> {new_version}]");
+                        println!("dry-run: {not} processing installation at {path} [{old_version_str} \u{2192} {new_version}]");
                     } else {
-                        println!("Processed installation at {path} [{old_version_str} -> {new_version}]");
+                        println!("Processed installation at {path} [{old_version_str} {new_version}]");
                         #[cfg(feature = "notify")]
                         self.notify_on_update(old_version, &metadata.version);
                         #[cfg(feature = "notify")]
@@ -99,7 +100,7 @@ impl Installation {
 
     // Set up the installation internally.
     #[tracing::instrument(level = "trace", skip(self))]
-    fn _setup(&self, metadata: Option<Metadata>) -> anyhow::Result<Option<Metadata>> {
+    fn setup_inner(&self, metadata: Option<Metadata>) -> anyhow::Result<Option<Metadata>> {
         let latest = self.query_latest()?;
         let download = if let Some(ref metadata) = metadata {
             if latest.version > metadata.version {
@@ -178,16 +179,17 @@ impl Installation {
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
         simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
-        simple_var_resolver.insert("env.JU_ERROR", err.to_string());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
+        simple_var_resolver.insert("env.JU_ERROR", err.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
         simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
-        let env_var_resolver = EnvVarResolver;
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
+        let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
+        let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
@@ -197,8 +199,9 @@ impl Installation {
             let mut command = command.clone();
             command.kind(NotifyKind::Failure);
             command.env("JU_ARCH", &self.config.architecture);
-            command.env("JU_ERROR", &err.to_string());
+            command.env("JU_CONFIG_VERSION", &self.config.version);
             command.env("JU_DIRECTORY", &path);
+            command.env("JU_ERROR", &err.to_string());
             if let Some(old) = old {
                 command.env("JU_OLD_VERSION", &old.to_string());
             }
@@ -225,6 +228,7 @@ impl Installation {
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
         simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
@@ -233,8 +237,8 @@ impl Installation {
         simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
-        let env_var_resolver = EnvVarResolver;
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
+        let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
+        let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
@@ -244,6 +248,7 @@ impl Installation {
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
             command.env("JU_ARCH", &self.config.architecture);
+            command.env("JU_CONFIG_VERSION", &self.config.version);
             command.env("JU_DIRECTORY", &path);
             command.env("JU_NEW_VERSION", &new.to_string());
             if let Some(old) = old {
@@ -272,6 +277,7 @@ impl Installation {
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
         simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
@@ -280,8 +286,8 @@ impl Installation {
         simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
-        let env_var_resolver = EnvVarResolver;
-        let var_resolvers: Vec<Box<dyn VarResolver>> = vec![Box::new(simple_var_resolver), Box::new(env_var_resolver)];
+        let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
+        let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
 
         // process all commands
@@ -291,6 +297,7 @@ impl Installation {
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
             command.env("JU_ARCH", &self.config.architecture);
+            command.env("JU_CONFIG_VERSION", &self.config.version);
             command.env("JU_DIRECTORY", &path);
             command.env("JU_NEW_VERSION", &new.to_string());
             if let Some(old) = old {

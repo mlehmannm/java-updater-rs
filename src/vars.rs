@@ -6,8 +6,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env;
 use std::fmt;
+use std::rc::Rc;
 
 /// The error type for operations interacting with variables.
+#[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum VarError {
     /// The specified variable is not present.
@@ -31,33 +33,17 @@ impl VarResolver for AsIsVarResolver {
     }
 }
 
-/// [`VarResolver`] implementation for environment variables.
-#[derive(Debug)]
-pub(crate) struct EnvVarResolver;
-
-impl VarResolver for EnvVarResolver {
-    fn resolve_var(&self, v: &str) -> Result<String, VarError> {
-        if let Some(v) = v.strip_prefix("env.") {
-            if let Ok(val) = env::var(v) {
-                return Ok(val);
-            }
-        };
-
-        Err(VarError::NotPresent(v.to_owned()))
-    }
-}
-
 /// [`VarResolver`] implementation that combines other variable resolvers.
 #[derive(Debug)]
 pub(crate) struct CombinedVarResolver {
-    resolvers: Vec<Box<dyn VarResolver>>,
+    resolvers: Vec<Rc<dyn VarResolver>>,
 }
 
 impl CombinedVarResolver {
     /// Constructs a new `CombinedVarResolver` with the given variable resolvers.
     pub(crate) fn new<I>(resolvers: I) -> Self
     where
-        I: IntoIterator<Item = Box<dyn VarResolver>>,
+        I: IntoIterator<Item = Rc<dyn VarResolver>>,
     {
         Self {
             resolvers: Vec::from_iter(resolvers),
@@ -66,6 +52,7 @@ impl CombinedVarResolver {
 }
 
 impl VarResolver for CombinedVarResolver {
+    #[tracing::instrument(level = "trace", ret)]
     fn resolve_var(&self, v: &str) -> Result<String, VarError> {
         for resolver in &self.resolvers {
             if let Ok(value) = resolver.resolve_var(v) {
@@ -74,6 +61,65 @@ impl VarResolver for CombinedVarResolver {
         }
 
         Err(VarError::NotPresent(v.to_owned()))
+    }
+}
+
+/// [`VarResolver`] implementation for environment variables from the operationg system.
+#[derive(Debug)]
+pub(crate) struct OsEnvVarResolver;
+
+impl VarResolver for OsEnvVarResolver {
+    #[tracing::instrument(level = "trace", ret)]
+    fn resolve_var(&self, v: &str) -> Result<String, VarError> {
+        if let Ok(val) = env::var(v) {
+            return Ok(val);
+        }
+
+        Err(VarError::NotPresent(v.to_owned()))
+    }
+}
+
+/// [`VarResolver`] that first removes the given prefix from the variable and then delegates to the given resolver.
+#[derive(Debug)]
+pub(crate) struct PrefixedVarResolver {
+    resolver: Rc<dyn VarResolver>,
+    prefix: String,
+}
+
+impl PrefixedVarResolver {
+    /// Constructs a new `PrefixedVarResolver` for the given variable resolver.
+    pub(crate) fn new(prefix: impl Into<String>, resolver: Rc<dyn VarResolver>) -> Self {
+        Self {
+            prefix: prefix.into(),
+            resolver,
+        }
+    }
+}
+
+impl VarResolver for PrefixedVarResolver {
+    #[tracing::instrument(level = "trace", ret)]
+    fn resolve_var(&self, v: &str) -> Result<String, VarError> {
+        if let Some(v) = v.strip_prefix(&self.prefix) {
+            return self.resolver.resolve_var(v);
+        };
+
+        Err(VarError::NotPresent(v.to_owned()))
+    }
+}
+
+/// [`VarResolver`] implementation for Rust environment constants.
+#[derive(Debug)]
+pub(crate) struct RustEnvVarResolver;
+
+impl VarResolver for RustEnvVarResolver {
+    #[tracing::instrument(level = "trace", ret)]
+    fn resolve_var(&self, v: &str) -> Result<String, VarError> {
+        match v {
+            "JU_ARCH" => Ok(env::consts::ARCH.to_string()),
+            "JU_FAMILY" => Ok(env::consts::FAMILY.to_string()),
+            "JU_OS" => Ok(env::consts::OS.to_string()),
+            _ => Err(VarError::NotPresent(v.to_owned())),
+        }
     }
 }
 
@@ -96,6 +142,7 @@ impl<'a> SimpleVarResolver<'a> {
 }
 
 impl VarResolver for SimpleVarResolver<'_> {
+    #[tracing::instrument(level = "trace", ret)]
     fn resolve_var(&self, v: &str) -> Result<String, VarError> {
         match self.vars.get(v) {
             Some(value) => Ok(value.clone()),
@@ -116,7 +163,7 @@ impl VarExpander {
     /// Constructs a new `VarExpander` with the given variable resolvers.
     pub(crate) fn new<I>(resolvers: I) -> Self
     where
-        I: IntoIterator<Item = Box<dyn VarResolver>>,
+        I: IntoIterator<Item = Rc<dyn VarResolver>>,
     {
         Self {
             resolver: CombinedVarResolver::new(resolvers),
@@ -129,8 +176,20 @@ impl VarExpander {
     where
         S: ?Sized + AsRef<str> + fmt::Debug,
     {
-        shellexpand::env_with_context(s, |s| self.resolve(s)) //
-            .map_err(|err| err.cause)
+        self.expand_inner(s.as_ref()).map(Cow::Owned)
+    }
+
+    // Expands all known variables in the given string.
+    fn expand_inner(&self, s: &str) -> Result<String, VarError> {
+        let expanded = shellexpand::env_with_context(s, |s| self.resolve(s)) //
+            .map_err(|err| err.cause)? //
+            .to_string();
+
+        if expanded == s {
+            return Ok(expanded);
+        }
+
+        self.expand_inner(&expanded)
     }
 
     // Provides the context for `expand`.
@@ -138,25 +197,6 @@ impl VarExpander {
     fn resolve(&self, v: &str) -> Result<Option<String>, VarError> {
         self.resolver.resolve_var(v).map(Option::Some)
     }
-}
-
-/// Expands all known variables in the given string with the given variable resolvers.
-#[tracing::instrument(level = "trace", ret, skip(resolvers))]
-pub(crate) fn expand<'a, S, I>(s: &'a S, mut resolvers: I) -> Result<Cow<'a, str>, VarError>
-where
-    S: ?Sized + AsRef<str> + fmt::Debug,
-    I: Iterator<Item = &'a dyn VarResolver>,
-{
-    shellexpand::env_with_context(s, |s| {
-        for r in resolvers.by_ref() {
-            if let Ok(value) = r.resolve_var(s) {
-                return Ok(Some(value));
-            }
-        }
-
-        Err(VarError::NotPresent(s.to_owned()))
-    })
-    .map_err(|err| err.cause)
 }
 
 #[cfg(test)]
@@ -175,15 +215,15 @@ mod tests {
     #[test]
     fn env_var_resolver_known_var() {
         env::set_var("MY_SHELL_VAR1", "MY_SHELL_VAL");
-        let resolver = EnvVarResolver;
-        let resolved = resolver.resolve_var("env.MY_SHELL_VAR1").unwrap();
+        let resolver = OsEnvVarResolver;
+        let resolved = resolver.resolve_var("MY_SHELL_VAR1").unwrap();
         assert_eq!(resolved, "MY_SHELL_VAL");
     }
 
     #[test]
     fn env_var_resolver_unknown_var() {
         env::remove_var("MY_SHELL_VAR2");
-        let resolver = EnvVarResolver;
+        let resolver = OsEnvVarResolver;
         let resolved = resolver.resolve_var("env.MY_SHELL_VAR2");
         let failed = match resolved {
             Ok(_) => false,
@@ -193,8 +233,29 @@ mod tests {
     }
 
     #[test]
+    fn rust_env_var_resolver_arch() {
+        let resolver = RustEnvVarResolver;
+        let resolved = resolver.resolve_var("JU_ARCH").unwrap();
+        assert_eq!(resolved, env::consts::ARCH);
+    }
+
+    #[test]
+    fn rust_env_var_resolver_family() {
+        let resolver = RustEnvVarResolver;
+        let resolved = resolver.resolve_var("JU_FAMILY").unwrap();
+        assert_eq!(resolved, env::consts::FAMILY);
+    }
+
+    #[test]
+    fn rust_env_var_resolver_os() {
+        let resolver = RustEnvVarResolver;
+        let resolved = resolver.resolve_var("JU_OS").unwrap();
+        assert_eq!(resolved, env::consts::OS);
+    }
+
+    #[test]
     fn simple_var_resolver_known_var() {
-        let mut resolver = Box::new(SimpleVarResolver::new());
+        let mut resolver = SimpleVarResolver::new();
         resolver.insert("foo.bar", "baz");
         let resolved = resolver.resolve_var("foo.bar").unwrap();
         assert_eq!(resolved, "baz");
@@ -202,7 +263,7 @@ mod tests {
 
     #[test]
     fn simple_var_resolver_unknown_var() {
-        let mut resolver = Box::new(SimpleVarResolver::new());
+        let mut resolver = SimpleVarResolver::new();
         resolver.insert("foo.bar", "baz");
         let resolved = resolver.resolve_var("foo.buz");
         let failed = match resolved {
@@ -212,22 +273,28 @@ mod tests {
         assert!(failed);
     }
 
+    #[allow(clippy::similar_names)]
     fn var_expander() -> VarExpander {
-        let mut simple_var_resolver = Box::new(SimpleVarResolver::new());
-        simple_var_resolver.insert("foo.bar", "baz");
-        let var_resolvers: [Box<dyn VarResolver>; 2] = [simple_var_resolver, Box::new(EnvVarResolver)];
+        let mut foo_resolver = SimpleVarResolver::new();
+        foo_resolver.insert("foo", "bar");
+        let mut baz_resolver = SimpleVarResolver::new();
+        baz_resolver.insert("baz", "${foo}");
+        let mut buz_resolver = SimpleVarResolver::new();
+        buz_resolver.insert("buz", "${buz}");
+        let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
+        let var_resolvers: [Rc<dyn VarResolver>; 4] = [Rc::new(foo_resolver), Rc::new(baz_resolver), Rc::new(buz_resolver), Rc::new(env_var_resolver)];
         VarExpander::new(var_resolvers)
     }
 
     #[test]
-    fn vars_resolver_known_env_var() {
+    fn var_expander_known_env_var() {
         env::set_var("MY_SHELL_VAR3", "MY_SHELL_VAL");
         let expanded = var_expander().expand("${env.MY_SHELL_VAR3}").unwrap();
         assert_eq!(expanded, Cow::Borrowed("MY_SHELL_VAL"));
     }
 
     #[test]
-    fn vars_resolver_unknown_env_var() {
+    fn var_expander_unknown_env_var() {
         env::remove_var("MY_SHELL_VAR4");
         let expanded = var_expander().expand("${env.MY_SHELL_VAR4}");
         let failed = match expanded {
@@ -238,17 +305,29 @@ mod tests {
     }
 
     #[test]
-    fn vars_resolver_known_simple_var() {
-        let expanded = var_expander().expand("${foo.bar}").unwrap();
-        assert_eq!(expanded, Cow::Borrowed("baz"));
+    fn var_expander_known_simple_var() {
+        let expanded = var_expander().expand("${foo}").unwrap();
+        assert_eq!(expanded, Cow::Borrowed("bar"));
     }
 
     #[test]
-    fn vars_resolver_unknown_simple_var() {
-        let expanded = var_expander().expand("${foo.buz}");
+    fn var_expander_known_simple_var_buz() {
+        let expanded = var_expander().expand("${buz}").unwrap();
+        assert_eq!(expanded, Cow::Borrowed("${buz}"));
+    }
+
+    #[test]
+    fn var_expander_known_simple_var_nested() {
+        let expanded = var_expander().expand("${baz}").unwrap();
+        assert_eq!(expanded, Cow::Borrowed("bar"));
+    }
+
+    #[test]
+    fn var_expander_unknown_simple_var() {
+        let expanded = var_expander().expand("${xyz}");
         let failed = match expanded {
             Ok(_) => false,
-            Err(err) => matches!(err, VarError::NotPresent(name) if name == "foo.buz"),
+            Err(err) => matches!(err, VarError::NotPresent(name) if name == "xyz"),
         };
         assert!(failed);
     }
