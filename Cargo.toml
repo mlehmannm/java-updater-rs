@@ -54,7 +54,7 @@ tracing = { version = "0.1", features = ["log", "release_max_level_trace"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [target.'cfg(not(windows))'.dependencies]
-flate2 = "1.0.35"
+flate2 = "1.1.0"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
