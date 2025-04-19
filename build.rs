@@ -127,7 +127,7 @@ where
 fn find_convert() -> Result<Command, Box<dyn Error>> {
     if let Ok(convert) = find_convert_reg() {
         return Ok(convert);
-    };
+    }
 
     find_convert_env()
 }

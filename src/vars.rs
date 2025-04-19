@@ -101,7 +101,7 @@ impl VarResolver for PrefixedVarResolver {
     fn resolve_var(&self, v: &str) -> Result<String, VarError> {
         if let Some(v) = v.strip_prefix(&self.prefix) {
             return self.resolver.resolve_var(v);
-        };
+        }
 
         Err(VarError::NotPresent(v.to_owned()))
     }
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn env_var_resolver_known_var() {
-        env::set_var("MY_SHELL_VAR1", "MY_SHELL_VAL");
+        unsafe { env::set_var("MY_SHELL_VAR1", "MY_SHELL_VAL") };
         let resolver = OsEnvVarResolver;
         let resolved = resolver.resolve_var("MY_SHELL_VAR1").unwrap();
         assert_eq!(resolved, "MY_SHELL_VAL");
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn env_var_resolver_unknown_var() {
-        env::remove_var("MY_SHELL_VAR2");
+        unsafe { env::remove_var("MY_SHELL_VAR2") };
         let resolver = OsEnvVarResolver;
         let resolved = resolver.resolve_var("env.MY_SHELL_VAR2");
         let failed = match resolved {
@@ -288,14 +288,14 @@ mod tests {
 
     #[test]
     fn var_expander_known_env_var() {
-        env::set_var("MY_SHELL_VAR3", "MY_SHELL_VAL");
+        unsafe { env::set_var("MY_SHELL_VAR3", "MY_SHELL_VAL") };
         let expanded = var_expander().expand("${env.MY_SHELL_VAR3}").unwrap();
         assert_eq!(expanded, Cow::Borrowed("MY_SHELL_VAL"));
     }
 
     #[test]
     fn var_expander_unknown_env_var() {
-        env::remove_var("MY_SHELL_VAR4");
+        unsafe { env::remove_var("MY_SHELL_VAR4") };
         let expanded = var_expander().expand("${env.MY_SHELL_VAR4}");
         let failed = match expanded {
             Ok(_) => false,

@@ -65,7 +65,7 @@ impl Installation {
                         let not = ATTENTION_COLOR.paint("NOT");
                         println!("dry-run: {not} processing installation at {path} [{old_version_str} \u{2192} {new_version}]");
                     } else {
-                        println!("Processed installation at {path} [{old_version_str} {new_version}]");
+                        println!("Processed installation at {path} [{old_version_str} \u{2192} {new_version}]");
                         #[cfg(feature = "notify")]
                         self.notify_on_update(old_version, &metadata.version);
                         #[cfg(feature = "notify")]
@@ -95,7 +95,7 @@ impl Installation {
                 #[cfg(feature = "notify")]
                 self.notify_on_failure(old_version.as_ref(), err);
             }
-        };
+        }
     }
 
     // Set up the installation internally.
@@ -172,7 +172,7 @@ impl Installation {
     fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
         if self.config.on_failure.is_empty() {
             return;
-        };
+        }
 
         let path = self.path.to_string_lossy();
 
@@ -221,7 +221,7 @@ impl Installation {
     fn notify_on_success(&self, old: Option<&semver::Version>, new: &semver::Version) {
         if self.config.on_success.is_empty() {
             return;
-        };
+        }
 
         let path = self.path.to_string_lossy();
 
@@ -270,7 +270,7 @@ impl Installation {
     fn notify_on_update(&self, old: Option<&semver::Version>, new: &semver::Version) {
         if self.config.on_update.is_empty() {
             return;
-        };
+        }
 
         let path = self.path.to_string_lossy();
 

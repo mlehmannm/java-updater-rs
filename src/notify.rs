@@ -2,8 +2,8 @@
 //!
 //! This module contains the notification command infrastructure.
 
-use crate::vars::VarExpander;
 use crate::NotifyCommandConfig;
+use crate::vars::VarExpander;
 use std::collections::HashMap;
 use std::process::{Command, Stdio};
 use tracing::error;
@@ -66,7 +66,7 @@ impl NotifyCommand {
                 Some(NotifyKind::Success) => error!(?err, "failed to execute notify (on success) command"),
                 None => error!(?err, "failed to execute notify command"),
             }
-        };
+        }
     }
 
     // Executes the notify command internally.

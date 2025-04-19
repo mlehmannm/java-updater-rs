@@ -25,8 +25,8 @@ use crate::version::*;
 use clap::Parser;
 use std::path::{self, Path, PathBuf};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use threadpool::ThreadPool;
 use time::format_description::FormatItem;
@@ -235,5 +235,5 @@ fn setup(basedir: &Path, args: &Args, config: Rc<InstallationConfig>) {
         Vendor::Azul => azul::setup(basedir, args, config),
         #[cfg(feature = "eclipse")]
         Vendor::Eclipse => eclipse::setup(basedir, args, config),
-    };
+    }
 }

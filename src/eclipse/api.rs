@@ -106,11 +106,7 @@ impl MetadataRequest {
     // Returns the requested operating system for the package.
     fn os(&self) -> String {
         let os = self.os.trim();
-        if os.is_empty() {
-            env::consts::OS.to_string()
-        } else {
-            os.to_lowercase()
-        }
+        if os.is_empty() { env::consts::OS.to_string() } else { os.to_lowercase() }
     }
 
     // Returns the requested type for the package.
@@ -130,11 +126,7 @@ impl MetadataRequest {
     // Returns the requested (major) version for the package.
     fn version(&self) -> String {
         let version = self.version.trim();
-        if version.is_empty() {
-            "17".to_string()
-        } else {
-            version.to_lowercase()
-        }
+        if version.is_empty() { "17".to_string() } else { version.to_lowercase() }
     }
 }
 

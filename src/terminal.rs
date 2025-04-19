@@ -3,7 +3,7 @@
 //! This module contains terminal related things.
 
 use nu_ansi_term::Color;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 /// The attention color.
 pub(crate) const ATTENTION_COLOR: Color = Color::Red;

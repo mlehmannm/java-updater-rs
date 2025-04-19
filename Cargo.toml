@@ -2,14 +2,14 @@
 authors = ["Marco Lehmann-Mörz"]
 categories = ["command-line-utilities", "update"]
 description = "A command-line program to keep a bunch of java installations up to date"
-edition = "2021"
+edition = "2024"
 keywords = ["update"]
 license = "MIT OR Apache-2.0"
 name = "java-updater"
 publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
-rust-version = "1.84.0"
+rust-version = "1.86.0"
 version = "0.4.0-dev"
 
 [[bin]]
