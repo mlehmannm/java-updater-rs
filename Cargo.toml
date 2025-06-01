@@ -56,7 +56,7 @@ flate2 = "1.1"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
-zip = "2.6"
+zip = "4.0"
 
 [build-dependencies]
 vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
