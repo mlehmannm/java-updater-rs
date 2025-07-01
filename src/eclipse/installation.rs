@@ -93,7 +93,7 @@ impl Installation {
                 let err_str = ATTENTION_COLOR.paint(format!("err = {err:?}"));
                 eprintln!("Failed to process installation at {path}!\r\n\t{err_str}");
                 #[cfg(feature = "notify")]
-                self.notify_on_failure(old_version.as_ref(), err);
+                self.notify_on_failure(old_version.as_ref(), &err);
             }
         }
     }
@@ -169,7 +169,7 @@ impl Installation {
     // Notify in case of failure.
     #[cfg(feature = "notify")]
     #[tracing::instrument(level = "trace", skip(self))]
-    fn notify_on_failure(&self, old: Option<&semver::Version>, err: anyhow::Error) {
+    fn notify_on_failure(&self, old: Option<&semver::Version>, err: &anyhow::Error) {
         if self.config.on_failure.is_empty() {
             return;
         }

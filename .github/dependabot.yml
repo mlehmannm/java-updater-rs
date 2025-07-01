@@ -1,13 +1,15 @@
 version: 2
 updates:
+  # group all dependencies in one PR
   - package-ecosystem: "cargo"
+    allow:
+      - dependency-type: "all"
     directory: "/"
-    schedule:
-      day: "friday"
-      interval: "monthly"
-      timezone: "Europe/Berlin"
-  - package-ecosystem: "devcontainers"
-    directory: "/"
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 1
     schedule:
       day: "friday"
       interval: "monthly"
