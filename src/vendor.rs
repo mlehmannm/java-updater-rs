@@ -41,7 +41,7 @@ impl Vendor {
             Self::Azul => AZUL_ID,
             #[cfg(feature = "eclipse")]
             Self::Eclipse => ECLIPSE_ID,
-            #[allow(unreachable_patterns)]
+            #[expect(unreachable_patterns)]
             _ => unreachable!(),
         }
     }
@@ -53,7 +53,7 @@ impl Vendor {
             Self::Azul => AZUL_NAME,
             #[cfg(feature = "eclipse")]
             Self::Eclipse => ECLIPSE_NAME,
-            #[allow(unreachable_patterns)]
+            #[expect(unreachable_patterns)]
             _ => unreachable!(),
         }
     }

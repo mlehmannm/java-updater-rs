@@ -22,7 +22,7 @@ pub(crate) fn set_window_title(title: &str) {
 }
 
 // https://github.com/rust-lang/cargo/blob/cbd05082547daf4f10044bb2fc8a8eb8696a05d8/src/cargo/util/progress.rs#L163
-#[allow(clippy::cast_precision_loss)]
+#[expect(clippy::cast_precision_loss)]
 #[doc(hidden)]
 pub(crate) fn set_windows_progress(progress: Option<usize>) {
     let (state, progress) = if let Some(progress) = progress { (1, progress as f64) } else { (0, 0.0) };

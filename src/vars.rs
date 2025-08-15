@@ -273,7 +273,7 @@ mod tests {
         assert!(failed);
     }
 
-    #[allow(clippy::similar_names)]
+    #[expect(clippy::similar_names)]
     fn var_expander() -> VarExpander {
         let mut foo_resolver = SimpleVarResolver::new();
         foo_resolver.insert("foo", "bar");

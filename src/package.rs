@@ -197,7 +197,7 @@ impl Package {
     }
 
     // Unpacks the package and replaces the old installation with the new installation.
-    #[allow(clippy::permissions_set_readonly_false)]
+    #[expect(clippy::permissions_set_readonly_false)]
     #[cfg(windows)]
     #[tracing::instrument(level = "trace", skip(self))]
     fn unpack(&self, pkg: &Path) -> anyhow::Result<()> {
@@ -253,6 +253,7 @@ impl Package {
             if file.is_dir() {
                 fs::create_dir_all(name)?;
             } else {
+                #[expect(clippy::collapsible_if)]
                 if let Some(p) = name.parent() {
                     if !p.exists() {
                         fs::create_dir_all(p)?;
