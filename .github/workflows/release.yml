@@ -9,6 +9,8 @@ on:
 
 env:
   ARTIFACT_NAME: java-updater
+  # https://github.com/cross-rs/cross/issues/1619
+  CROSS_NO_WARNINGS: 0
 
 jobs:
   release:
