@@ -9,6 +9,7 @@ name = "java-updater"
 publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
+# keep in sync with .github/workflows/release.yml
 rust-version = "1.89.0"
 version = "0.4.0"
 
