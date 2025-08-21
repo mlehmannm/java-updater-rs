@@ -39,8 +39,29 @@ installations:
     version: 17
     on-failure:
       - *notify-on-failure
-    on-update:
-      - *notify-on-update
+    on-success:
       - path: powershell.exe
         args:
-          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME','${env.JU_DIRECTORY}', 'User')"
+          # set JAVA_HOME_17 for the current user
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${env.JU_CONFIG_VERSION}', '${env.JU_DIRECTORY}', 'User')"
+      - path: powershell.exe
+        args:
+          # set JAVA_HOME for the current user
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME', '${env.JU_DIRECTORY}', 'User')"
+    on-update:
+      - *notify-on-update
+
+  - vendor: eclipse
+    directory: *directory
+    # enabled: false
+    type: jdk
+    version: 21
+    on-failure:
+      - *notify-on-failure
+    on-success:
+      - path: powershell.exe
+        args:
+          # set JAVA_HOME_21 for the current user
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${env.JU_CONFIG_VERSION}', '${env.JU_DIRECTORY}', 'User')"
+    on-update:
+      - *notify-on-update

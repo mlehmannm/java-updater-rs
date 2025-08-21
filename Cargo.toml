@@ -24,7 +24,7 @@ notify = []
 
 [dependencies]
 anyhow = "1.0"
-base16ct = { version = "0.2", features = ["alloc"] }
+base16ct = { version = "0.3", features = ["alloc"] }
 clap = { version = "4.5", default-features = false, features = [
     "cargo",
     "derive",
@@ -56,7 +56,7 @@ flate2 = "1.1"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
-zip = "4.3"
+zip = "4.4"
 
 [build-dependencies]
 vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
@@ -66,7 +66,7 @@ windows-registry = "0.5"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.20"
+tempfile = "3.21"
 test-log = "0.2"
 
 [profile.release]
