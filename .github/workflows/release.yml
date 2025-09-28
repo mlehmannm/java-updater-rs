@@ -75,7 +75,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           targets: ${{ matrix.target }}
-          toolchain: "1.89.0"
+          toolchain: "1.90.0"
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build

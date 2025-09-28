@@ -10,7 +10,7 @@ publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
 # keep in sync with .github/workflows/release.yml
-rust-version = "1.89.0"
+rust-version = "1.90.0"
 version = "0.4.0"
 
 [[bin]]
@@ -36,7 +36,7 @@ clap = { version = "4.5", default-features = false, features = [
     "usage",
     "wrap_help",
 ] }
-humantime = "2.2"
+humantime = "2.3"
 nu-ansi-term = "0.50"
 reqwest = { version = "0.12", features = ["blocking"] }
 semver = { version = "1.0", features = ["serde"] }
@@ -57,17 +57,17 @@ flate2 = "1.1"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
-zip = "4.6"
+zip = "5.1"
 
 [build-dependencies]
 vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
-windows-registry = "0.5"
+windows-registry = "0.6"
 winres = "0.1.12"
 
 [dev-dependencies]
-tempfile = "3.21"
+tempfile = "3.23"
 test-log = "0.2"
 
 [profile.release]
