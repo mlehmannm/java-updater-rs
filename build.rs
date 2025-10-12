@@ -15,7 +15,7 @@ use vergen_git2::{BuildBuilder, Emitter, Git2Builder, RustcBuilder};
 #[cfg(windows)]
 use windows_registry::LOCAL_MACHINE;
 #[cfg(windows)]
-use winres::WindowsResource;
+use winresource::WindowsResource;
 
 #[cfg(windows)]
 const RES_TARGET: &str = "res";
