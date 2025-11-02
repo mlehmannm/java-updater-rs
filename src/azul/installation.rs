@@ -178,14 +178,14 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_ERROR", err.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
@@ -227,14 +227,14 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
@@ -276,14 +276,14 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.to_string());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.to_string());
+        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
+        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
         simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
         simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
         if let Some(old) = old {
             simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.to_string());
+        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
         simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
         simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
