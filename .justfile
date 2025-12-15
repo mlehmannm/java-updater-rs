@@ -56,7 +56,7 @@ run-full *ARGS='':
 
 # install
 install *ARGS='': (test "--release")
-    cargo {{ CHANNEL }} install --locked --path . {{ ARGS }}
+    cargo {{ CHANNEL }} auditable install --locked --path . {{ ARGS }}
 
 # install (debug)
 install-debug *ARGS='':
@@ -94,6 +94,22 @@ fmt *ARGS='':
 release VERSION='--help':
     cargo {{ CHANNEL }} release {{ VERSION }} --execute
 
+# start a new feature branch
+start-branch BRANCH *ARGS='':
+    git switch --create {{ BRANCH }} {{ ARGS }}
+
+# finish an existing feature branch
+finish-branch BRANCH *ARGS='':
+    git checkout main
+    git checkout -b {{ BRANCH }}-finish
+    git merge --squash {{ BRANCH }} --no-log
+    git commit -a
+    git checkout main
+    git merge {{ BRANCH }}-finish
+    git branch -d {{ BRANCH }}
+    git branch -d {{ BRANCH }}-finish
+    echo git push origin --delete {{ BRANCH }}
+
 # create the icon from svg via imagemagick (docker)
 ico:
     docker run --rm -v {{ invocation_directory() }}:/app -w /app minidocks/imagemagick convert -density 256x256 -background transparent res/svg/exe.svg -define icon:auto-resize=256,64,48,40,32,24,20,16 -compress none res/exe.ico
@@ -117,4 +133,4 @@ install-prereqs: install-prereqs-cargo
 # install prerequisites
 [private]
 install-prereqs-cargo:
-    cargo install --locked cargo-cache cargo-edit cargo-expand cargo-outdated cargo-release
+    cargo install --locked cargo-auditable cargo-cache cargo-edit cargo-expand cargo-outdated cargo-release
