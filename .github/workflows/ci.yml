@@ -58,6 +58,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Setup Rust Toolchain
         run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-auditable
       - name: Build (no default features)
         id: minimal
         run: cargo build --no-default-features --locked --verbose
@@ -66,7 +69,7 @@ jobs:
         if: ${{ (failure() || success()) && steps.minimal.outcome == 'success' }}
         run: exit 1
       - name: Build (with default features)
-        run: cargo build --locked --verbose
+        run: cargo auditable build --locked --verbose
       - name: Test
         run: cargo test --locked --verbose
 
