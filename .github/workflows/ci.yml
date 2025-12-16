@@ -9,8 +9,8 @@ on:
       - '**.md'
   push:
     branches:
-      - 'feature/*''
-      - 'issue/*''
+      - 'feature/*'
+      - 'issue/*'
       - main
       - auditable
     paths-ignore:
