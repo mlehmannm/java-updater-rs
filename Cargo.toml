@@ -25,7 +25,7 @@ notify = []
 
 [dependencies]
 anyhow = "1.0"
-base16ct = { version = "0.3", features = ["alloc"] }
+base16ct = { version = "1.0", features = ["alloc"] }
 clap = { version = "4.5", default-features = false, features = [
     "cargo",
     "derive",
@@ -57,10 +57,10 @@ flate2 = "1.1"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
-zip = "7.0"
+zip = "7.2"
 
 [build-dependencies]
-vergen-git2 = { version = "1.0", features = ["build", "emit_and_set", "rustc"] }
+vergen-git2 = { version = "9.1", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
 windows-registry = "0.6"
