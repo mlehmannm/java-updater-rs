@@ -57,7 +57,7 @@ flate2 = "1.1"
 tar = "0.4"
 
 [target.'cfg(windows)'.dependencies]
-zip = "7.2"
+zip = "8.1"
 
 [build-dependencies]
 vergen-git2 = { version = "9.1", features = ["build", "emit_and_set", "rustc"] }
@@ -67,7 +67,7 @@ windows-registry = "0.6"
 winresource = "0.1"
 
 [dev-dependencies]
-tempfile = "3.24"
+tempfile = "3.26"
 test-log = "0.2"
 
 [package.metadata.winres]
