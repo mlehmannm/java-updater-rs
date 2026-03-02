@@ -21,8 +21,8 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        # run locally with act --var SIMULATE=x to skip this step
-        if: ${{ vars.SIMULATE == '' }}
+        # skip step when run locally with act
+        if: ${{ !env.ACT }}
         run: gh release create ${{ github.ref_name }}
   assets:
     needs: release
@@ -52,19 +52,19 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - archive: ".zip"
             build: windows-arm
-            command: cargo
+            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: aarch64-pc-windows-msvc
           - archive: ".zip"
             build: windows-32-bit
-            command: cargo
+            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: i686-pc-windows-msvc
           - archive: ".zip"
             build: windows-64-bit
-            command: cargo
+            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -76,8 +76,13 @@ jobs:
         with:
           targets: ${{ matrix.target }}
           toolchain: "1.90.0"
+        # https://github.com/rust-secure-code/cargo-auditable/issues/95
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
+      - name: Install cargo-auditable
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-auditable
       - name: Build
         # env:
         #   RUSTFLAGS: -Zon-broken-pipe=kill
@@ -107,8 +112,8 @@ jobs:
       - name: Upload artifacts
         env:
           GH_TOKEN: ${{ github.token }}
-        # run locally with act --var SIMULATE=x to skip this step
-        if: ${{ vars.SIMULATE == '' }}
+        # skip step when run locally with act
+        if: ${{ !env.ACT }}
         run: gh release upload ${{ github.ref_name }} ${{ env.ARCHIVE_PATH }}
 
 permissions:
