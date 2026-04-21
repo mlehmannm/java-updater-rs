@@ -36,6 +36,7 @@ clap = { version = "4", default-features = false, features = [
     "usage",
     "wrap_help",
 ] }
+digest-io = "0.1"
 humantime = "2"
 nu-ansi-term = "0.50"
 reqwest = { version = "0.13", features = ["blocking"] }
@@ -96,7 +97,7 @@ panic = "abort"             # reduces binary size by ~50% in combination with -Z
 split-debuginfo = "packed"  # generates a separate *.dwp/*.dSYM so the binary can get stripped
 strip = "symbols"           # see split-debuginfo - allows us to drop the size by ~65%
 
-[lints.clippy] # uncomment from time to time and run `just clippy`
+# [lints.clippy] # uncomment from time to time and run `just clippy`
 # cargo = { priority = -1, level = "deny" }
 # complexity = { priority = -1, level = "deny" }
 # correctness = { priority = -1, level = "deny" }

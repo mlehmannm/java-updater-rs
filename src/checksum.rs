@@ -2,6 +2,7 @@
 //!
 //! This module contains code to create a checksum (SHA256) "on the fly" while writing data.
 
+use digest_io::IoWrapper;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{self, Result, Write};
@@ -10,9 +11,9 @@ use std::path::Path;
 // Calculates the checksum (SHA256) for the given file.
 pub(crate) fn checksum(path: &Path) -> Result<String> {
     let mut dest_file = File::open(path)?;
-    let mut hasher = Sha256::new();
+    let mut hasher = IoWrapper(Sha256::new());
     io::copy(&mut dest_file, &mut hasher)?;
-    let hash = hasher.finalize();
+    let hash = hasher.0.finalize();
     let checksum = base16ct::lower::encode_string(&hash);
 
     Ok(checksum)
@@ -20,20 +21,23 @@ pub(crate) fn checksum(path: &Path) -> Result<String> {
 
 /// The struct to create the checksum (SHA256) "on the fly".
 pub(crate) struct ChecksumWrite<W> {
-    hasher: Sha256,
+    hasher: IoWrapper<Sha256>,
     write: W,
 }
 
 impl<W: Write> ChecksumWrite<W> {
     /// Creates a new `ChecksumWrite` on top of the given [Write].
     pub(crate) fn new(write: W) -> Self {
-        Self { hasher: Sha256::new(), write }
+        Self {
+            hasher: IoWrapper(Sha256::new()),
+            write,
+        }
     }
 
     /// Returns the checksum and consume the `ChecksumWrite`.
     pub(crate) fn checksum(mut self) -> Result<String> {
         self.flush()?;
-        let hash = self.hasher.finalize();
+        let hash = self.hasher.0.finalize();
         let checksum = base16ct::lower::encode_string(&hash);
 
         Ok(checksum)
