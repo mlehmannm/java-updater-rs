@@ -104,23 +104,28 @@ fn internal_main() -> anyhow::Result<()> {
     let thread_pool = ThreadPool::new(num_threads(args.threads));
     let args = Arc::new(args);
     let num_installations = config.installations.len();
+
+    // initial progress
+    set_window_title(&format!("0/{num_installations} installs"));
+    set_windows_progress(Some(0));
+
     let processed = Arc::new(AtomicUsize::new(0));
     for installation in config.installations {
         let basedir = basedir.to_path_buf();
         let args = args.clone();
         let processed = processed.clone();
         thread_pool.execute(move || {
+            // setup installation
+            setup(&basedir, &args, Rc::new(installation));
+
             // update window title
-            let i = processed.fetch_add(1, Ordering::Relaxed);
+            let i = processed.fetch_add(1, Ordering::Relaxed) + 1;
             let window_title = format!("{i}/{num_installations} installs");
             set_window_title(&window_title);
 
             // update window progress
             let progress: usize = i * 100 / num_installations;
             set_windows_progress(Some(progress));
-
-            // setup installation
-            setup(&basedir, &args, Rc::new(installation));
         });
     }
     thread_pool.join();
