@@ -1,4 +1,5 @@
 # justfile (https://github.com/casey/just)
+
 # load a .env file, if present
 
 set dotenv-load := true
@@ -18,6 +19,7 @@ CHANNEL := ''
 #CHANNEL := '+stable'
 #CHANNEL := '+nightly'
 #CHANNEL := '+1.84'
+
 # configure log
 
 export RUST_LOG := 'trace,cargo=warn,hyper=warn,reqwest=warn'

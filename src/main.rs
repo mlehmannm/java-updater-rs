@@ -157,7 +157,7 @@ fn num_threads(threads: Option<usize>) -> usize {
     threads.unwrap_or(max_threads).clamp(min_threads, max_threads)
 }
 
-// TODO short doc
+// Formats the elapsed time as a human-readable string.
 #[doc(hidden)]
 fn format_elapsed(elapsed: Duration) -> String {
     // null out everything below seconds
@@ -167,7 +167,7 @@ fn format_elapsed(elapsed: Duration) -> String {
     humantime::format_duration(elapsed).to_string()
 }
 
-// TODO short doc
+// Formats the given date and time as a string.
 #[doc(hidden)]
 fn format_now(now: OffsetDateTime) -> String {
     // define format

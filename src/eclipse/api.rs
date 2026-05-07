@@ -29,18 +29,19 @@ impl MetadataRequest {
         let response: serde_json::Value = Deserialize::deserialize(&mut de)?;
         trace!("response = {response:#?}");
 
-        // check structure of response (1)
+        // check structure of response
+
         let Some(response) = response.as_array() else {
             return Err(anyhow!("response has not the expected structure"));
         };
-        // check structure of response (2)
-        let response = if response.len() == 1 {
-            &response[0]
-        } else {
-            return Err(anyhow!("response is ambiguous {}", response.len()));
-        };
-
-        // TODO check that the response corresponds to the request (the query for x86 returns packages for x64 too)
+        let arch = self.arch(); // Get the normalized architecture string
+        let response = response
+            .iter()
+            .find(|r| {
+                let r_arch = r["binary"]["architecture"].as_str().unwrap_or_default();
+                r_arch == arch // Direct comparison after normalization
+            })
+            .ok_or_else(|| anyhow!("no package found for architecture {arch}"))?;
 
         // url
 
@@ -93,20 +94,27 @@ impl MetadataRequest {
         Ok(url)
     }
 
-    // Returns the requested architecture for the package.
+    // Returns the requested architecture for the package, normalized for the API.
     fn arch(&self) -> String {
         let arch = self.arch.trim();
-        if arch.is_empty() {
-            env::consts::ARCH.to_string()
+        let arch = if arch.is_empty() {
+            env::consts::ARCH.to_lowercase()
         } else {
             arch.to_lowercase()
+        };
+
+        match arch.as_str() {
+            "aarch64" | "arm64" => "aarch64".to_string(),
+            "x64" | "x86_64" | "amd64" => "x64".to_string(),
+            "x86" | "i386" | "i686" => "x32".to_string(), // Map x86 to x32 for Eclipse API
+            other => other.to_string(),
         }
     }
 
     // Returns the requested operating system for the package.
     fn os(&self) -> String {
         let os = self.os.trim();
-        if os.is_empty() { env::consts::OS.to_string() } else { os.to_lowercase() }
+        if os.is_empty() { env::consts::OS.to_lowercase() } else { os.to_lowercase() }
     }
 
     // Returns the requested type for the package.
@@ -135,4 +143,59 @@ pub(super) struct MetadataResponse {
     pub(super) checksum: String,
     pub(super) url: String,
     pub(super) version: Version,
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use test_log::test;
+
+    #[test]
+    fn test_query_x86_architecture() {
+        let request = MetadataRequest {
+            arch: "x86".to_string(),
+            os: "windows".to_string(),
+            package_type: "jdk".to_string(),
+            version: "17".to_string(),
+        };
+        let result = request.query();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_query_x64_architecture() {
+        let request = MetadataRequest {
+            arch: "x64".to_string(),
+            os: "windows".to_string(),
+            package_type: "jdk".to_string(),
+            version: "17".to_string(),
+        };
+        let result = request.query();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_query_aarch64_architecture() {
+        let request = MetadataRequest {
+            arch: "aarch64".to_string(),
+            os: "linux".to_string(), // Using linux as a common target for aarch64
+            package_type: "jdk".to_string(),
+            version: "17".to_string(),
+        };
+        let result = request.query();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_query_arm64_architecture() {
+        let request = MetadataRequest {
+            arch: "arm64".to_string(), // 'arm64' should also normalize to 'aarch64'
+            os: "linux".to_string(),
+            package_type: "jdk".to_string(),
+            version: "17".to_string(),
+        };
+        let result = request.query();
+        assert!(result.is_ok());
+    }
 }
