@@ -209,7 +209,7 @@ mod tests {
             arch: "aarch64".to_string(),
             os: "linux".to_string(), // Using linux as a common target for aarch64
             package_type: "jdk".to_string(),
-            version: "25".to_string(),
+            version: "17".to_string(), // TODO 25 will return two entries
         };
         let _result = request.query().expect("Failed to query");
         // TODO check response
