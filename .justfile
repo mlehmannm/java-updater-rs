@@ -121,6 +121,10 @@ finish-branch BRANCH:
 ico:
     docker run --rm -v {{ invocation_directory() }}:/app -w /app minidocks/imagemagick convert -density 256x256 -background transparent res/svg/exe.svg -define icon:auto-resize=256,64,48,40,32,24,20,16 -compress none res/exe.ico
 
+# run the release build locally (docker)
+act-release MATRIX='build:linux-64-bit':
+    act -W ./.github/workflows/release-lite.yml --matrix {{ MATRIX }}
+
 # check for outdated dependencies / upgrade dependencies / update dependencies
 update-deps:
     cargo outdated --verbose

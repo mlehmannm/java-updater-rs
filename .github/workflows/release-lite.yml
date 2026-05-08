@@ -5,7 +5,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "WONT-TRIGGER--v[0-9]+.[0-9]+.[0-9]+*"
 
 env:
   ARTIFACT_NAME: java-updater
@@ -37,34 +37,28 @@ jobs:
         include:
           - archive: ".tar.gz"
             build: linux-arm
-            command: cross
             os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
           - archive: ".tar.gz"
             build: linux-32-bit
-            command: cross
             os: ubuntu-latest
             target: i686-unknown-linux-gnu
           - archive: ".tar.gz"
             build: linux-64-bit
-            command: cross
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - archive: ".zip"
             build: windows-arm
-            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: aarch64-pc-windows-msvc
           - archive: ".zip"
             build: windows-32-bit
-            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: i686-pc-windows-msvc
           - archive: ".zip"
             build: windows-64-bit
-            command: cargo-auditable
             ext: ".exe"
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -76,9 +70,7 @@ jobs:
         with:
           targets: ${{ matrix.target }}
           toolchain: "1.90.0"
-        # https://github.com/rust-secure-code/cargo-auditable/issues/95
-      - name: Install cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
+      # https://github.com/rust-secure-code/cargo-auditable/issues/95
       - name: Install cargo-auditable
         uses: taiki-e/cache-cargo-install-action@v3
         with:
@@ -86,7 +78,7 @@ jobs:
       - name: Build
         # env:
         #   RUSTFLAGS: -Zon-broken-pipe=kill
-        run: ${{ matrix.command }} build --locked --release --target ${{ matrix.target }}
+        run: cargo auditable build --locked --release --target ${{ matrix.target }}
       # 7z is available on all runners.
       # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#preinstalled-software
       - name: Create tar.gz archive
@@ -95,6 +87,8 @@ jobs:
         shell: bash
         run: |
           DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
+          pwd
+          ls -al
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           tar -zcvf "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
