@@ -188,8 +188,8 @@ mod tests {
             package_type: "jdk".to_string(),
             version: "17".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
             package_type: "jdk".to_string(),
             version: "17".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 }
