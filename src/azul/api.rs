@@ -42,12 +42,12 @@ impl MetadataRequest {
         let Some(response) = response.as_array() else {
             return Err(anyhow!("response has not the expected structure"));
         };
-        let arch = self.arch(); // Get the normalized architecture string
+        let arch = self.arch();
         let response = response
             .iter()
             .find(|r| {
                 let name = r["name"].as_str().unwrap_or_default();
-                name.contains(&format!("win_{arch}"))
+                name.contains(&format!("{arch}.{ARCHIVE_TYPE}"))
             })
             .ok_or_else(|| anyhow!("no package found for architecture {arch}"))?;
 

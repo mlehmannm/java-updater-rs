@@ -34,7 +34,7 @@ impl MetadataRequest {
         let Some(response) = response.as_array() else {
             return Err(anyhow!("response has not the expected structure"));
         };
-        let arch = self.arch(); // Get the normalized architecture string
+        let arch = self.arch();
         let response = response
             .iter()
             .find(|r| {
