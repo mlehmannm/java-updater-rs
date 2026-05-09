@@ -44,7 +44,7 @@ jobs:
           - apt: "gcc-x86-64-linux-gnu"
             archive: .tar.gz
             build: linux-64-bit
-            linker: x86-64-linux-gnu-gcc
+            linker: x86_64-linux-gnu-gcc
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - archive: .zip
@@ -83,7 +83,6 @@ jobs:
           [target.${{ matrix.target }}]
           linker = "${{ matrix.linker }}"
           EOF
-        # https://github.com/rust-secure-code/cargo-auditable/issues/95
       - name: Install cargo-auditable
         uses: taiki-e/cache-cargo-install-action@v3
         with:

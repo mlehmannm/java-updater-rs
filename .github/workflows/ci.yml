@@ -36,6 +36,7 @@ env:
   CARGO_PROFILE_TEST_DEBUG: 0
   # Cargo should always colorise output.
   CARGO_TERM_COLOR: always
+  # When downloading a file, rustup will retry the download a number of times.
   RUSTUP_MAX_RETRIES: 10
   # Don't emit giant backtraces in the CI logs.
   RUST_BACKTRACE: short

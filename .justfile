@@ -123,8 +123,8 @@ ico:
 
 # https://nektosact.com/usage/
 # run the release build locally (docker)
-act-release ARGS='--matrix build:linux-64-bit':
-    act -W ./.github/workflows/release-lite.yml {{ ARGS }} --bind --env ARTIFACT_DIR=target/ --env GITHUB_REF=refs/tags/nektos.act
+act-release MATRIX='build:linux-64-bit':
+    act -W ./.github/workflows/release-lite.yml --matrix {{ MATRIX }} --bind --env ARTIFACT_DIR=target/ --env GITHUB_REF=refs/tags/nektos.act
 
 # check for outdated dependencies / upgrade dependencies / update dependencies
 update-deps:
