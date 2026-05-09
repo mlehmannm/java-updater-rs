@@ -1,5 +1,3 @@
-# Copied from https://github.com/open-contracting/cardinal-rs/blob/main/.github/workflows/release.yml
-
 name: Release
 
 on:
@@ -8,6 +6,7 @@ on:
       - "WONT-TRIGGER--v[0-9]+.[0-9]+.[0-9]+*"
 
 env:
+  ARTIFACT_DIR: "./"
   ARTIFACT_NAME: java-updater
   # https://github.com/cross-rs/cross/issues/1619
   CROSS_NO_WARNINGS: 0
@@ -29,37 +28,38 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Include all "Tier 1 with Host Tools" targets and "Tier 2 with Host Tools" targets for Windows and macOS,
-        # excluding *-pc-windows-msvc, which requires cross-toolchains. Goal is one option per OS per architecture.
-        # https://doc.rust-lang.org/rustc/platform-support.html
-        # https://github.com/cross-rs/cross#supported-targets
-        # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
         include:
-          - archive: ".tar.gz"
+          - apt: "gcc-aarch64-linux-gnu"
+            archive: .tar.gz
             build: linux-arm
+            linker: aarch64-linux-gnu-gcc
             os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-          - archive: ".tar.gz"
+          - apt: "gcc-i686-linux-gnu"
+            archive: .tar.gz
             build: linux-32-bit
+            linker: i686-linux-gnu-gcc
             os: ubuntu-latest
             target: i686-unknown-linux-gnu
-          - archive: ".tar.gz"
+          - apt: "gcc-x86-64-linux-gnu"
+            archive: .tar.gz
             build: linux-64-bit
+            linker: x86-64-linux-gnu-gcc
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - archive: ".zip"
+          - archive: .zip
             build: windows-arm
-            ext: ".exe"
+            ext: .exe
             os: windows-latest
             target: aarch64-pc-windows-msvc
-          - archive: ".zip"
+          - archive: .zip
             build: windows-32-bit
-            ext: ".exe"
+            ext: .exe
             os: windows-latest
             target: i686-pc-windows-msvc
-          - archive: ".zip"
+          - archive: .zip
             build: windows-64-bit
-            ext: ".exe"
+            ext: .exe
             os: windows-latest
             target: x86_64-pc-windows-msvc
     steps:
@@ -70,7 +70,20 @@ jobs:
         with:
           targets: ${{ matrix.target }}
           toolchain: "1.90.0"
-      # https://github.com/rust-secure-code/cargo-auditable/issues/95
+      - name: Install cross compiler
+        if: matrix.apt != ''
+        run: |
+          apt-get update
+          apt-get install -y ${{ matrix.apt }}
+      - name: Configure linker
+        if: matrix.linker != ''
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml <<EOF
+          [target.${{ matrix.target }}]
+          linker = "${{ matrix.linker }}"
+          EOF
+        # https://github.com/rust-secure-code/cargo-auditable/issues/95
       - name: Install cargo-auditable
         uses: taiki-e/cache-cargo-install-action@v3
         with:
@@ -86,9 +99,7 @@ jobs:
         if: matrix.archive == '.tar.gz'
         shell: bash
         run: |
-          DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
-          pwd
-          ls -al
+          DIRECTORY="${{ env.ARTIFACT_DIR }}${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           tar -zcvf "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
@@ -98,7 +109,7 @@ jobs:
         if: matrix.archive == '.zip'
         shell: bash
         run: |
-          DIRECTORY="${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
+          DIRECTORY="${{ env.ARTIFACT_DIR }}${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
