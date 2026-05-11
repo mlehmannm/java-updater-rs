@@ -116,7 +116,7 @@ jobs:
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
-          echo "ARCHIVE_PATH=${DIRECTORY}/${{ matrix.archive }}" >> ${GITHUB_ENV}
+          echo "ARCHIVE_PATH=${DIRECTORY}${{ matrix.archive }}" >> ${GITHUB_ENV}
       - name: Upload release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
