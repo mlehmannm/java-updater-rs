@@ -7,7 +7,7 @@ on:
 
 env:
   # Will be overwritten by Act (https://nektosact.com/).
-  ACT: false
+  ACT: 'false'
   # Will be computed later.
   ARCHIVE_PATH: ''
   # Will be overwritten when run locally.
@@ -25,7 +25,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         # skip step when run locally with act
-        if: ${{ !env.ACT }}
+        if: ${{ env.ACT == 'false' }}
         run: gh release create ${{ github.ref_name }}
   assets:
     needs: release
@@ -117,15 +117,11 @@ jobs:
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
           echo "ARCHIVE_PATH=${DIRECTORY}/${{ matrix.archive }}" >> ${GITHUB_ENV}
-      - name: Show some env variables
-        run: |
-          echo "ACT => ${{ env.ACT }}"
-          echo "ARCHIVE_PATH => ${{ env.ARCHIVE_PATH }}"
       - name: Upload release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         # skip step when run locally with act
-        if: ${{ !env.ACT && env.ARCHIVE_PATH != ''}}
+        if: ${{ env.ACT == 'false' && env.ARCHIVE_PATH != '' }}
         run: gh release upload ${{ github.ref_name }} ${{ env.ARCHIVE_PATH }}
 
 permissions:
