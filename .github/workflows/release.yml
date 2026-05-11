@@ -11,7 +11,7 @@ env:
   # Will be computed later.
   ARCHIVE_PATH: ''
   # Will be overwritten when run locally.
-  ARTIFACT_DIR: './'
+  ARTIFACT_DIR: '.'
   # Name of the artifact to produce.
   ARTIFACT_NAME: java-updater
 
@@ -102,7 +102,7 @@ jobs:
         if: matrix.archive == '.tar.gz'
         shell: bash
         run: |
-          DIRECTORY="${{ env.ARTIFACT_DIR }}${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
+          DIRECTORY="${{ env.ARTIFACT_DIR }}/${{ env.ARTIFACT_NAME }}-${{ github.ref_name }}-${{ matrix.build }}"
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           tar -zcvf "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
@@ -116,7 +116,11 @@ jobs:
           mkdir -p "${DIRECTORY}"
           cp license* "target/${{ matrix.target }}/release/${{ env.ARTIFACT_NAME }}${{ matrix.ext }}" "${DIRECTORY}"
           7z a "${DIRECTORY}${{ matrix.archive }}" "${DIRECTORY}"
-          echo "ARCHIVE_PATH=${DIRECTORY}${{ matrix.archive }}" >> ${GITHUB_ENV}
+          echo "ARCHIVE_PATH=${DIRECTORY}/${{ matrix.archive }}" >> ${GITHUB_ENV}
+      - name: Show some env variables
+        run: |
+          echo "ACT => ${{ env.ACT }}"
+          echo "ARCHIVE_PATH => ${{ env.ARCHIVE_PATH }}"
       - name: Upload release artifacts
         env:
           GH_TOKEN: ${{ github.token }}
