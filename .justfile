@@ -106,16 +106,16 @@ start-branch BRANCH:
     git switch --create {{ BRANCH }}
 
 # finish an existing feature branch
-finish-branch BRANCH:
+finish-branch BRANCH MESSAGE:
     git checkout main
     git checkout -b {{ BRANCH }}-finish
     git merge --squash {{ BRANCH }} --no-log
-    git commit -a
+    git commit --message "{{ MESSAGE }}"
     git checkout main
     git merge {{ BRANCH }}-finish
-    git branch -d {{ BRANCH }}
-    git branch -d {{ BRANCH }}-finish
-    echo git push origin --delete {{ BRANCH }}
+    git branch --delete {{ BRANCH }}
+    git branch --delete {{ BRANCH }}-finish
+    git push origin --delete {{ BRANCH }}
 
 # create the icon from svg via imagemagick (docker)
 ico:

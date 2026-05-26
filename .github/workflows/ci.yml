@@ -41,7 +41,7 @@ env:
   # Don't emit giant backtraces in the CI logs.
   RUST_BACKTRACE: short
   # Reset to disable failure on clippy warnings.
-  RUSTFLAGS: ""
+  RUSTFLAGS: ''
 
 jobs:
   build_and_test:
