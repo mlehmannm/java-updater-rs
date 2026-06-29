@@ -103,7 +103,7 @@ release VERSION='--help':
 
 # start a new feature branch (use feature/XYZ as BRANCH)
 start-branch BRANCH:
-    git switch --create {{ BRANCH }}
+    git switch --create "{{ BRANCH }}"
 
 # update the current feature branch from main
 update-branch:
@@ -114,14 +114,14 @@ update-branch:
 # finish an existing feature branch
 finish-branch BRANCH MESSAGE:
     git checkout main
-    git checkout -b {{ BRANCH }}-finish
-    git merge --squash {{ BRANCH }} --no-log
+    git checkout -b "{{ BRANCH }}-finish"
+    git merge --squash "{{ BRANCH }}" --no-log
     git commit --message "{{ MESSAGE }}"
     git checkout main
-    git merge {{ BRANCH }}-finish
-    git branch --delete {{ BRANCH }}
-    git branch --delete {{ BRANCH }}-finish
-    git push origin --delete {{ BRANCH }}
+    git merge "{{ BRANCH }}-finish"
+    git branch --delete "{{ BRANCH }}"
+    git branch --delete "{{ BRANCH }}-finish"
+    git push origin --delete "{{ BRANCH }}"
 
 # create the icon from svg via imagemagick (docker)
 ico:
