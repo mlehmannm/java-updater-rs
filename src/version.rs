@@ -20,13 +20,18 @@ pub(crate) struct Version {
 
 impl Default for Version {
     fn default() -> Self {
-        let git_dirty = env!("VERGEN_GIT_DIRTY");
+        let git_dirty = option_env!("VERGEN_GIT_DIRTY").unwrap_or("false") == "true";
+        let git_sha = option_env!("VERGEN_GIT_SHA").unwrap_or("unknown").to_string();
+        let pkg_name = env!("CARGO_PKG_NAME").to_string();
+        let pkg_version = env!("CARGO_PKG_VERSION").to_string();
+        let rustc_semver = env!("VERGEN_RUSTC_SEMVER").to_string();
+
         Self {
-            git_dirty: git_dirty == "true",
-            git_sha: env!("VERGEN_GIT_SHA").to_string(),
-            pkg_name: env!("CARGO_PKG_NAME").to_string(),
-            pkg_version: env!("CARGO_PKG_VERSION").to_string(),
-            rustc_semver: env!("VERGEN_RUSTC_SEMVER").to_string(),
+            git_dirty,
+            git_sha,
+            pkg_name,
+            pkg_version,
+            rustc_semver,
         }
     }
 }
@@ -59,8 +64,8 @@ mod tests {
     #[test]
     fn default() {
         let version = Version::default();
-        assert_eq!(version.git_dirty, env!("VERGEN_GIT_DIRTY") == "true");
-        assert_eq!(version.git_sha, env!("VERGEN_GIT_SHA"));
+        assert_eq!(version.git_dirty, option_env!("VERGEN_GIT_DIRTY").unwrap_or("false") == "true");
+        assert_eq!(version.git_sha, option_env!("VERGEN_GIT_SHA").unwrap_or("unknown"));
         assert_eq!(version.pkg_name, env!("CARGO_PKG_NAME"));
         assert_eq!(version.pkg_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(version.rustc_semver, env!("VERGEN_RUSTC_SEMVER"));

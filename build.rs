@@ -50,9 +50,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(windows)]
 fn include_windows_resources() -> Result<(), Box<dyn Error>> {
     svg_to_ico(EXE_ICO_SOURCE, EXE_ICO_TARGET)?;
-    let git_dirty = std::env::var("VERGEN_GIT_DIRTY")?;
-    let git_sha = std::env::var("VERGEN_GIT_SHA")?;
-    let git_dirty_suffix = if git_dirty == "true" { "-dirty" } else { "" };
+    let git_dirty_suffix = if std::env::var("VERGEN_GIT_DIRTY").as_deref() == Ok("true") {
+        "-dirty"
+    } else {
+        ""
+    };
+    let git_sha = std::env::var("VERGEN_GIT_SHA").unwrap_or_else(|_| "unknown".to_string());
     let file_description = format!("Java Updater (git/{git_sha}{git_dirty_suffix})");
     WindowsResource::new() //
         .set_icon(EXE_ICO_TARGET) //
@@ -77,7 +80,7 @@ fn svg_to_ico(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    find_convert()? //
+    let status = find_convert()? //
         .stdin(Stdio::null()) // disconnect from process
         .stderr(Stdio::null()) // disconnect from process
         .stdout(Stdio::null()) // disconnect from process
@@ -89,6 +92,9 @@ fn svg_to_ico(input: &str, output: &str) -> Result<(), Box<dyn Error>> {
         .arg(output) //
         .status()
         .inspect(|rc| println!("cargo:warning={CONVERT_EXE} returned {rc:?}!"))?;
+    if !status.success() {
+        return Err(format!("{CONVERT_EXE} returned {status:?}").into());
+    }
 
     Ok(())
 }
@@ -107,17 +113,17 @@ where
         let now = SystemTime::now();
         let output_mtime = meta.modified()?;
 
-        // reduce resolution to prevent git checkout instablitities
+        // reduce resolution to prevent git checkout instabilities
         let output_mtime = now.duration_since(output_mtime)?.as_secs() / 2;
 
         let input_meta = fs::metadata(input)?;
         let input_mtime = input_meta.modified()?;
 
-        // reduce resolution to prevent git checkout instablitities
+        // reduce resolution to prevent git checkout instabilities
         let input_mtime = now.duration_since(input_mtime)?.as_secs() / 2;
 
         // if input file is more recent than output file, we are outdated
-        Ok(input_mtime > output_mtime)
+        Ok(input_mtime < output_mtime)
     } else {
         // output file not found, we are outdated
         Ok(true)

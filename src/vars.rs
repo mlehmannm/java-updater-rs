@@ -199,6 +199,7 @@ impl VarExpander {
     }
 }
 
+#[allow(clippy::similar_names)]
 #[cfg(test)]
 mod tests {
 
