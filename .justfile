@@ -105,6 +105,12 @@ release VERSION='--help':
 start-branch BRANCH:
     git switch --create {{ BRANCH }}
 
+# update the current feature branch from main
+update-branch:
+    @if ((git branch --show-current) -eq "main") { throw "Refusing to rebase main" }
+    git fetch origin main
+    git rebase origin/main
+
 # finish an existing feature branch
 finish-branch BRANCH MESSAGE:
     git checkout main
