@@ -28,6 +28,12 @@ const EXE_MANIFEST: &str = "res/exe.manifest";
 #[cfg(windows)]
 const CONVERT_EXE: &str = "convert.exe";
 #[cfg(windows)]
+const ENV_MAGICK_HOME: &str = "MAGICK_HOME";
+#[cfg(windows)]
+const ENV_VERGEN_GIT_DIRTY: &str = "VERGEN_GIT_DIRTY";
+#[cfg(windows)]
+const ENV_VERGEN_GIT_SHA: &str = "VERGEN_GIT_SHA";
+#[cfg(windows)]
 const MAGICK_EXE: &str = "magick.exe";
 
 // Main entry point for the build script.
@@ -50,12 +56,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(windows)]
 fn include_windows_resources() -> Result<(), Box<dyn Error>> {
     svg_to_ico(EXE_ICO_SOURCE, EXE_ICO_TARGET)?;
-    let git_dirty_suffix = if std::env::var("VERGEN_GIT_DIRTY").as_deref() == Ok("true") {
+    let git_dirty_suffix = if std::env::var(ENV_VERGEN_GIT_DIRTY).as_deref() == Ok("true") {
         "-dirty"
     } else {
         ""
     };
-    let git_sha = std::env::var("VERGEN_GIT_SHA").unwrap_or_else(|_| "unknown".to_string());
+    let git_sha = std::env::var(ENV_VERGEN_GIT_SHA).unwrap_or_else(|_| "unknown".to_string());
     let file_description = format!("Java Updater (git/{git_sha}{git_dirty_suffix})");
     WindowsResource::new() //
         .set_icon(EXE_ICO_TARGET) //
@@ -161,7 +167,7 @@ fn find_convert_reg() -> Result<Command, Box<dyn Error>> {
 
 #[cfg(windows)]
 fn find_convert_env() -> Result<Command, Box<dyn Error>> {
-    let home = env::var("MAGICK_HOME")?;
+    let home = env::var(ENV_MAGICK_HOME)?;
 
     // check for convert
     let convert = PathBuf::from(&home).join(CONVERT_EXE);

@@ -12,12 +12,18 @@ _TBW_: describe yaml
 
 ### Available variables
 
+Java Updater variables can be referenced as `${NAME}`.
+
 - `JU_CONFIG_ARCH`
+- `JU_CONFIG_DIRECTORY`
 - `JU_CONFIG_TYPE`
 - `JU_CONFIG_VENDOR`
 - `JU_CONFIG_VERSION`
+- `JU_ARCH`
+- `JU_FAMILY`
+- `JU_OS`
 
-**NOTE:** The variables used for the directory are not prefixed with `env.`!
+Operating system environment variables can be referenced as `${env.NAME}`.
 
 ## Scheduling (Linux)
 
@@ -28,7 +34,7 @@ _TBW_: cron/systemd
 Run as Administrator
 
 ```shell
-schtasks /create /tn "Update Java Installations" /tr "<path/to/java-update.exe> --config <path/to/config>" /sc onlogon
+schtasks /create /tn "Update Java Installations" /tr "<path/to/java-updater.exe> --config <path/to/config>" /sc onlogon
 ```
 
 This will run the Java Updater each time the user logs on.
@@ -37,36 +43,40 @@ This will run the Java Updater each time the user logs on.
 
 ### Common variables
 
-All variables will be made available to the executed program via its environment.
+Java Updater variables can be referenced as `${NAME}` in notify command configuration. Operating system environment variables can be referenced as `${env.NAME}`.
 
-- `env.JU_ARCH`
-- `env.JU_CONFIG_ARCH`
-- `env.JU_CONFIG_TYPE`
-- `env.JU_CONFIG_VENDOR`
-- `env.JU_CONFIG_VERSION`
-- `env.JU_DIRECTORY`
-- `env.JU_OS`
-- `env.JU_TYPE`
-- `env.JU_VENDOR_ID`
-- `env.JU_VENDOR_NAME`
+All common variables will also be made available to the executed program via its environment.
+
+- `JU_ARCH`
+- `JU_CONFIG_ARCH`
+- `JU_CONFIG_DIRECTORY`
+- `JU_CONFIG_TYPE`
+- `JU_CONFIG_VENDOR`
+- `JU_CONFIG_VERSION`
+- `JU_DIRECTORY`
+- `JU_FAMILY`
+- `JU_OS`
+- `JU_TYPE`
+- `JU_VENDOR_ID`
+- `JU_VENDOR_NAME`
 
 ### on-failure
 
 Additionally to the common variables, the following variables will be made available as well:
 
-- `env.JU_ERROR`
-- `env.JU_OLD_VERSION` (only set, when available)
+- `JU_ERROR`
+- `JU_OLD_VERSION` (only set, when available)
 
 ### on-success (runs always even if no update happened)
 
 Additionally to the common variables, the following variables will be made available as well:
 
-- `env.JU_NEW_VERSION`
-- `env.JU_OLD_VERSION` (only set, when available)
+- `JU_NEW_VERSION`
+- `JU_OLD_VERSION` (only set, when available)
 
 ### on-update (runs only when an update happened)
 
 Additionally to the common variables, the following variables will be made available as well:
 
-- `env.JU_NEW_VERSION`
-- `env.JU_OLD_VERSION` (only set, when available)
+- `JU_NEW_VERSION`
+- `JU_OLD_VERSION` (only set, when available)

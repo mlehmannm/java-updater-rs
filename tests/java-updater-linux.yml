@@ -1,18 +1,18 @@
 ---
 aliases:
-  directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
+  directory: &directory tmp/${JU_CONFIG_VENDOR}/${JU_CONFIG_ARCH}/${JU_CONFIG_VERSION}
   # Fedora: sudo dnf install libnotify
   # Debian: sudo apt install notify-send
   notify-on-failure: &notify-on-failure
     path: notify-send
     args:
       - "failed"
-      - "${env.JU_ERROR}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${JU_ERROR}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]"
   notify-on-update: &notify-on-update
     path: notify-send
     args:
       - "updated"
-      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${JU_OLD_VERSION:-n/a} -> ${JU_NEW_VERSION}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]"
 
 settings:
 
@@ -22,7 +22,7 @@ installations:
 
   - vendor: azul
     architecture: i686
-    directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
+    directory: tmp/${JU_CONFIG_VENDOR}/x86/${JU_CONFIG_VERSION}
     # enabled: false
     type: jdk
     version: "8"

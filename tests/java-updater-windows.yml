@@ -1,18 +1,18 @@
 ---
 aliases:
-  directory: &directory tmp/${JU_VENDOR}/${JU_ARCH}/${JU_VERSION}
+  directory: &directory tmp/${JU_CONFIG_VENDOR}/${JU_CONFIG_ARCH}/${JU_CONFIG_VERSION}
   # https://github.com/vaskovsky/notify-send
   notify-on-failure: &notify-on-failure
     path: D:\dev\src\notify-send\notify-send.exe
     args:
       - "failed"
-      - "${env.JU_ERROR}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${JU_ERROR}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]"
     directory: "${env.windir}"
   notify-on-update: &notify-on-update
     path: D:\dev\src\notify-send\notify-send.exe
     args:
       - "updated"
-      - "${env.JU_OLD_VERSION:-n/a} -> ${env.JU_NEW_VERSION}\n${env.JU_DIRECTORY} [${env.JU_VENDOR_NAME} (${env.JU_VENDOR_ID})]"
+      - "${JU_OLD_VERSION:-n/a} -> ${JU_NEW_VERSION}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]"
     directory: "${env.windir}"
 
 installations:
@@ -21,7 +21,7 @@ installations:
 
   - vendor: azul
     architecture: i686
-    directory: tmp/${JU_VENDOR}/x86/${JU_VERSION}
+    directory: tmp/${JU_CONFIG_VENDOR}/x86/${JU_CONFIG_VERSION}
     # enabled: false
     type: jdk
     version: "8"
@@ -43,11 +43,11 @@ installations:
       - path: powershell.exe
         args:
           # set JAVA_HOME_17 for the current user
-          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${env.JU_CONFIG_VERSION}', '${env.JU_DIRECTORY}', 'User')"
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${JU_CONFIG_VERSION}', '${JU_DIRECTORY}', 'User')"
       - path: powershell.exe
         args:
           # set JAVA_HOME for the current user
-          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME', '${env.JU_DIRECTORY}', 'User')"
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME', '${JU_DIRECTORY}', 'User')"
     on-update:
       - *notify-on-update
 
@@ -62,6 +62,6 @@ installations:
       - path: powershell.exe
         args:
           # set JAVA_HOME_21 for the current user
-          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${env.JU_CONFIG_VERSION}', '${env.JU_DIRECTORY}', 'User')"
+          - "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${JU_CONFIG_VERSION}', '${JU_DIRECTORY}', 'User')"
     on-update:
       - *notify-on-update

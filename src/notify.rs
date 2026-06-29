@@ -8,6 +8,37 @@ use std::collections::HashMap;
 use std::process::{Command, Stdio};
 use tracing::error;
 
+/// Environment variable holding the runtime architecture.
+pub(crate) const ENV_JU_ARCH: &str = "JU_ARCH";
+/// Environment variable holding the configured target architecture.
+pub(crate) const ENV_JU_CONFIG_ARCH: &str = "JU_CONFIG_ARCH";
+/// Environment variable holding the raw configured directory.
+pub(crate) const ENV_JU_CONFIG_DIRECTORY: &str = "JU_CONFIG_DIRECTORY";
+/// Environment variable holding the configured package type.
+pub(crate) const ENV_JU_CONFIG_TYPE: &str = "JU_CONFIG_TYPE";
+/// Environment variable holding the configured vendor.
+pub(crate) const ENV_JU_CONFIG_VENDOR: &str = "JU_CONFIG_VENDOR";
+/// Environment variable holding the configured Java version.
+pub(crate) const ENV_JU_CONFIG_VERSION: &str = "JU_CONFIG_VERSION";
+/// Environment variable holding the installation directory.
+pub(crate) const ENV_JU_DIRECTORY: &str = "JU_DIRECTORY";
+/// Environment variable holding the failure error.
+pub(crate) const ENV_JU_ERROR: &str = "JU_ERROR";
+/// Environment variable holding the runtime operating-system family.
+pub(crate) const ENV_JU_FAMILY: &str = "JU_FAMILY";
+/// Environment variable holding the newly installed Java version.
+pub(crate) const ENV_JU_NEW_VERSION: &str = "JU_NEW_VERSION";
+/// Environment variable holding the previously installed Java version.
+pub(crate) const ENV_JU_OLD_VERSION: &str = "JU_OLD_VERSION";
+/// Environment variable holding the runtime operating system.
+pub(crate) const ENV_JU_OS: &str = "JU_OS";
+/// Environment variable holding the package type.
+pub(crate) const ENV_JU_TYPE: &str = "JU_TYPE";
+/// Environment variable holding the vendor identifier.
+pub(crate) const ENV_JU_VENDOR_ID: &str = "JU_VENDOR_ID";
+/// Environment variable holding the vendor name.
+pub(crate) const ENV_JU_VENDOR_NAME: &str = "JU_VENDOR_NAME";
+
 /// A list specifying general categories of notification.
 #[derive(Clone, Debug)]
 pub(crate) enum NotifyKind {
@@ -84,8 +115,7 @@ impl NotifyCommand {
             cmd.current_dir(dir.as_ref());
         }
         for (key, val) in &self.env {
-            let val = var_expander.expand(val)?;
-            cmd.env(key, val.as_ref());
+            cmd.env(key, val);
         }
         cmd.stdin(Stdio::null()); // disconnect from self
         cmd.stderr(Stdio::null()); // disconnect from self

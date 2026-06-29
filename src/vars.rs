@@ -126,7 +126,7 @@ impl VarResolver for RustEnvVarResolver {
 /// [`VarResolver`] implementation for simple variables.
 #[derive(Debug)]
 pub(crate) struct SimpleVarResolver<'a> {
-    vars: HashMap<&'a str, String>,
+    vars: HashMap<Cow<'a, str>, String>,
 }
 
 impl<'a> SimpleVarResolver<'a> {
@@ -136,8 +136,12 @@ impl<'a> SimpleVarResolver<'a> {
     }
 
     /// Registers the value for the given variable name.
-    pub(crate) fn insert<V: Into<String>>(&mut self, name: &'a str, val: V) {
-        self.vars.insert(name, val.into());
+    pub(crate) fn insert<K, V>(&mut self, name: K, val: V)
+    where
+        K: Into<Cow<'a, str>>,
+        V: Into<String>,
+    {
+        self.vars.insert(name.into(), val.into());
     }
 }
 
@@ -258,6 +262,14 @@ mod tests {
     fn simple_var_resolver_known_var() {
         let mut resolver = SimpleVarResolver::new();
         resolver.insert("foo.bar", "baz");
+        let resolved = resolver.resolve_var("foo.bar").unwrap();
+        assert_eq!(resolved, "baz");
+    }
+
+    #[test]
+    fn simple_var_resolver_owned_key() {
+        let mut resolver = SimpleVarResolver::new();
+        resolver.insert(format!("{}.{}", "foo", "bar"), "baz");
         let resolved = resolver.resolve_var("foo.bar").unwrap();
         assert_eq!(resolved, "baz");
     }

@@ -171,6 +171,7 @@ mod tests {
 
     use super::*;
     use std::env;
+    use std::path::Path;
     use test_log::test;
 
     #[test]
@@ -268,5 +269,183 @@ mod tests {
         assert_eq!(Ok(expanded_directory), var_expander.expand("${JU_CONFIG_DIRECTORY}").map(Cow::into_owned));
         assert_eq!(Ok(vendor), var_expander.expand("${JU_CONFIG_VENDOR}").map(Cow::into_owned));
         assert_eq!(Ok(version), var_expander.expand("${JU_CONFIG_VERSION}").map(Cow::into_owned));
+    }
+
+    #[cfg(feature = "notify")]
+    #[derive(Debug, PartialEq)]
+    struct FixtureCommand {
+        args: Vec<String>,
+        directory: Option<String>,
+        path: String,
+    }
+
+    #[cfg(feature = "notify")]
+    #[derive(Debug, PartialEq)]
+    struct FixtureInstallation {
+        architecture: String,
+        directory: String,
+        enabled: bool,
+        expanded_directory: String,
+        on_failure: Vec<FixtureCommand>,
+        on_success: Vec<FixtureCommand>,
+        on_update: Vec<FixtureCommand>,
+        package_type: String,
+        vendor: String,
+        version: String,
+    }
+
+    #[cfg(feature = "notify")]
+    fn fixture_command(command: &NotifyCommandConfig) -> FixtureCommand {
+        FixtureCommand {
+            args: command.args.clone(),
+            directory: command.directory.clone(),
+            path: command.path.clone(),
+        }
+    }
+
+    #[cfg(feature = "notify")]
+    fn notify_failure_command(path: &str, directory: Option<&str>) -> FixtureCommand {
+        FixtureCommand {
+            args: vec![
+                "failed".to_string(),
+                "${JU_ERROR}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]".to_string(),
+            ],
+            directory: directory.map(str::to_string),
+            path: path.to_string(),
+        }
+    }
+
+    #[cfg(feature = "notify")]
+    fn notify_update_command(path: &str, directory: Option<&str>) -> FixtureCommand {
+        FixtureCommand {
+            args: vec![
+                "updated".to_string(),
+                "${JU_OLD_VERSION:-n/a} -> ${JU_NEW_VERSION}\n${JU_DIRECTORY} [${JU_VENDOR_NAME} (${JU_VENDOR_ID})]".to_string(),
+            ],
+            directory: directory.map(str::to_string),
+            path: path.to_string(),
+        }
+    }
+
+    #[cfg(feature = "notify")]
+    fn powershell_command(script: &str) -> FixtureCommand {
+        FixtureCommand {
+            args: vec![script.to_string()],
+            directory: None,
+            path: "powershell.exe".to_string(),
+        }
+    }
+
+    #[cfg(feature = "notify")]
+    fn fixture_installations(filename: &str) -> Vec<FixtureInstallation> {
+        let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests").join(filename);
+        let config = Config::load_from_file(filename).unwrap();
+        config
+            .installations
+            .into_iter()
+            .map(|config| {
+                let config = Rc::new(config);
+                let expanded_directory = InstallationConfig::expand_directory(&config);
+                FixtureInstallation {
+                    architecture: config.architecture.clone(),
+                    directory: config.directory.clone(),
+                    enabled: config.enabled,
+                    expanded_directory,
+                    on_failure: config.on_failure.iter().map(fixture_command).collect(),
+                    on_success: config.on_success.iter().map(fixture_command).collect(),
+                    on_update: config.on_update.iter().map(fixture_command).collect(),
+                    package_type: config.package_type.clone(),
+                    vendor: config.vendor.clone(),
+                    version: config.version.clone(),
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    #[cfg(feature = "notify")]
+    fn linux_fixture_contents() {
+        let architecture = env::consts::ARCH;
+        let notify_failure = notify_failure_command("notify-send", None);
+        let notify_update = notify_update_command("notify-send", None);
+        let expected = vec![
+            FixtureInstallation {
+                architecture: "i686".to_string(),
+                directory: "tmp/${JU_CONFIG_VENDOR}/x86/${JU_CONFIG_VERSION}".to_string(),
+                enabled: true,
+                expanded_directory: "tmp/azul/x86/8".to_string(),
+                on_failure: vec![notify_failure_command("notify-send", None)],
+                on_success: vec![],
+                on_update: vec![notify_update_command("notify-send", None)],
+                package_type: "jdk".to_string(),
+                vendor: "azul".to_string(),
+                version: "8".to_string(),
+            },
+            FixtureInstallation {
+                architecture: architecture.to_string(),
+                directory: "tmp/${JU_CONFIG_VENDOR}/${JU_CONFIG_ARCH}/${JU_CONFIG_VERSION}".to_string(),
+                enabled: true,
+                expanded_directory: format!("tmp/eclipse/{architecture}/17"),
+                on_failure: vec![notify_failure],
+                on_success: vec![],
+                on_update: vec![notify_update],
+                package_type: "jdk".to_string(),
+                vendor: "eclipse".to_string(),
+                version: "17".to_string(),
+            },
+        ];
+        assert_eq!(expected, fixture_installations("java-updater-linux.yml"));
+    }
+
+    #[test]
+    #[cfg(feature = "notify")]
+    fn windows_fixture_contents() {
+        let architecture = env::consts::ARCH;
+        let notify_send = r"D:\dev\src\notify-send\notify-send.exe";
+        let notify_dir = Some("${env.windir}");
+        let expected = vec![
+            FixtureInstallation {
+                architecture: "i686".to_string(),
+                directory: "tmp/${JU_CONFIG_VENDOR}/x86/${JU_CONFIG_VERSION}".to_string(),
+                enabled: true,
+                expanded_directory: "tmp/azul/x86/8".to_string(),
+                on_failure: vec![notify_failure_command(notify_send, notify_dir)],
+                on_success: vec![],
+                on_update: vec![notify_update_command(notify_send, notify_dir)],
+                package_type: "jdk".to_string(),
+                vendor: "azul".to_string(),
+                version: "8".to_string(),
+            },
+            FixtureInstallation {
+                architecture: architecture.to_string(),
+                directory: "tmp/${JU_CONFIG_VENDOR}/${JU_CONFIG_ARCH}/${JU_CONFIG_VERSION}".to_string(),
+                enabled: true,
+                expanded_directory: format!("tmp/eclipse/{architecture}/17"),
+                on_failure: vec![notify_failure_command(notify_send, notify_dir)],
+                on_success: vec![
+                    powershell_command("[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${JU_CONFIG_VERSION}', '${JU_DIRECTORY}', 'User')"),
+                    powershell_command("[System.Environment]::SetEnvironmentVariable('JAVA_HOME', '${JU_DIRECTORY}', 'User')"),
+                ],
+                on_update: vec![notify_update_command(notify_send, notify_dir)],
+                package_type: "jdk".to_string(),
+                vendor: "eclipse".to_string(),
+                version: "17".to_string(),
+            },
+            FixtureInstallation {
+                architecture: architecture.to_string(),
+                directory: "tmp/${JU_CONFIG_VENDOR}/${JU_CONFIG_ARCH}/${JU_CONFIG_VERSION}".to_string(),
+                enabled: true,
+                expanded_directory: format!("tmp/eclipse/{architecture}/21"),
+                on_failure: vec![notify_failure_command(notify_send, notify_dir)],
+                on_success: vec![powershell_command(
+                    "[System.Environment]::SetEnvironmentVariable('JAVA_HOME_${JU_CONFIG_VERSION}', '${JU_DIRECTORY}', 'User')",
+                )],
+                on_update: vec![notify_update_command(notify_send, notify_dir)],
+                package_type: "jdk".to_string(),
+                vendor: "eclipse".to_string(),
+                version: "21".to_string(),
+            },
+        ];
+        assert_eq!(expected, fixture_installations("java-updater-windows.yml"));
     }
 }

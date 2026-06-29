@@ -178,16 +178,22 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
-        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
-        simple_var_resolver.insert("env.JU_ERROR", err.to_string());
+        simple_var_resolver.insert(ENV_JU_ARCH, env::consts::ARCH);
+        simple_var_resolver.insert(ENV_JU_CONFIG_ARCH, self.config.architecture.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_DIRECTORY, self.config.directory.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VENDOR, self.config.vendor.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VERSION, self.config.version.clone());
+        simple_var_resolver.insert(ENV_JU_DIRECTORY, path.to_string());
+        simple_var_resolver.insert(ENV_JU_ERROR, err.to_string());
+        simple_var_resolver.insert(ENV_JU_FAMILY, env::consts::FAMILY);
         if let Some(old) = old {
-            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
+            simple_var_resolver.insert(ENV_JU_OLD_VERSION, old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
-        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
+        simple_var_resolver.insert(ENV_JU_OS, env::consts::OS);
+        simple_var_resolver.insert(ENV_JU_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_VENDOR_ID, self.vendor.id().to_string());
+        simple_var_resolver.insert(ENV_JU_VENDOR_NAME, self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
         let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
@@ -198,16 +204,22 @@ impl Installation {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Failure);
-            command.env("JU_ARCH", &self.config.architecture);
-            command.env("JU_CONFIG_VERSION", &self.config.version);
-            command.env("JU_DIRECTORY", &path);
-            command.env("JU_ERROR", &err.to_string());
+            command.env(ENV_JU_ARCH, env::consts::ARCH);
+            command.env(ENV_JU_CONFIG_ARCH, &self.config.architecture);
+            command.env(ENV_JU_CONFIG_DIRECTORY, &self.config.directory);
+            command.env(ENV_JU_CONFIG_TYPE, &self.config.package_type);
+            command.env(ENV_JU_CONFIG_VENDOR, &self.config.vendor);
+            command.env(ENV_JU_CONFIG_VERSION, &self.config.version);
+            command.env(ENV_JU_DIRECTORY, &path);
+            command.env(ENV_JU_ERROR, &err.to_string());
+            command.env(ENV_JU_FAMILY, env::consts::FAMILY);
             if let Some(old) = old {
-                command.env("JU_OLD_VERSION", &old.to_string());
+                command.env(ENV_JU_OLD_VERSION, &old.to_string());
             }
-            command.env("JU_TYPE", &self.config.package_type);
-            command.env("JU_VENDOR_ID", self.vendor.id());
-            command.env("JU_VENDOR_NAME", self.vendor.name());
+            command.env(ENV_JU_OS, env::consts::OS);
+            command.env(ENV_JU_TYPE, &self.config.package_type);
+            command.env(ENV_JU_VENDOR_ID, self.vendor.id());
+            command.env(ENV_JU_VENDOR_NAME, self.vendor.name());
 
             // execute command
             trace!(?command, "executing on-failure command");
@@ -227,16 +239,22 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
-        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
-        simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
+        simple_var_resolver.insert(ENV_JU_ARCH, env::consts::ARCH);
+        simple_var_resolver.insert(ENV_JU_CONFIG_ARCH, self.config.architecture.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_DIRECTORY, self.config.directory.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VENDOR, self.config.vendor.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VERSION, self.config.version.clone());
+        simple_var_resolver.insert(ENV_JU_DIRECTORY, path.to_string());
+        simple_var_resolver.insert(ENV_JU_FAMILY, env::consts::FAMILY);
+        simple_var_resolver.insert(ENV_JU_NEW_VERSION, new.to_string());
         if let Some(old) = old {
-            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
+            simple_var_resolver.insert(ENV_JU_OLD_VERSION, old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
-        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
+        simple_var_resolver.insert(ENV_JU_OS, env::consts::OS);
+        simple_var_resolver.insert(ENV_JU_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_VENDOR_ID, self.vendor.id().to_string());
+        simple_var_resolver.insert(ENV_JU_VENDOR_NAME, self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
         let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
@@ -247,16 +265,22 @@ impl Installation {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
-            command.env("JU_ARCH", &self.config.architecture);
-            command.env("JU_CONFIG_VERSION", &self.config.version);
-            command.env("JU_DIRECTORY", &path);
-            command.env("JU_NEW_VERSION", &new.to_string());
+            command.env(ENV_JU_ARCH, env::consts::ARCH);
+            command.env(ENV_JU_CONFIG_ARCH, &self.config.architecture);
+            command.env(ENV_JU_CONFIG_DIRECTORY, &self.config.directory);
+            command.env(ENV_JU_CONFIG_TYPE, &self.config.package_type);
+            command.env(ENV_JU_CONFIG_VENDOR, &self.config.vendor);
+            command.env(ENV_JU_CONFIG_VERSION, &self.config.version);
+            command.env(ENV_JU_DIRECTORY, &path);
+            command.env(ENV_JU_FAMILY, env::consts::FAMILY);
+            command.env(ENV_JU_NEW_VERSION, &new.to_string());
             if let Some(old) = old {
-                command.env("JU_OLD_VERSION", &old.to_string());
+                command.env(ENV_JU_OLD_VERSION, &old.to_string());
             }
-            command.env("JU_TYPE", &self.config.package_type);
-            command.env("JU_VENDOR_ID", self.vendor.id());
-            command.env("JU_VENDOR_NAME", self.vendor.name());
+            command.env(ENV_JU_OS, env::consts::OS);
+            command.env(ENV_JU_TYPE, &self.config.package_type);
+            command.env(ENV_JU_VENDOR_ID, self.vendor.id());
+            command.env(ENV_JU_VENDOR_NAME, self.vendor.name());
 
             // execute command
             trace!(?command, "executing on-success command");
@@ -276,16 +300,22 @@ impl Installation {
 
         // setup variable resolver(s)
         let mut simple_var_resolver = SimpleVarResolver::new();
-        simple_var_resolver.insert("env.JU_ARCH", self.config.architecture.clone());
-        simple_var_resolver.insert("env.JU_CONFIG_VERSION", self.config.version.clone());
-        simple_var_resolver.insert("env.JU_DIRECTORY", path.to_string());
-        simple_var_resolver.insert("env.JU_NEW_VERSION", new.to_string());
+        simple_var_resolver.insert(ENV_JU_ARCH, env::consts::ARCH);
+        simple_var_resolver.insert(ENV_JU_CONFIG_ARCH, self.config.architecture.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_DIRECTORY, self.config.directory.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VENDOR, self.config.vendor.clone());
+        simple_var_resolver.insert(ENV_JU_CONFIG_VERSION, self.config.version.clone());
+        simple_var_resolver.insert(ENV_JU_DIRECTORY, path.to_string());
+        simple_var_resolver.insert(ENV_JU_FAMILY, env::consts::FAMILY);
+        simple_var_resolver.insert(ENV_JU_NEW_VERSION, new.to_string());
         if let Some(old) = old {
-            simple_var_resolver.insert("env.JU_OLD_VERSION", old.to_string());
+            simple_var_resolver.insert(ENV_JU_OLD_VERSION, old.to_string());
         }
-        simple_var_resolver.insert("env.JU_TYPE", self.config.package_type.clone());
-        simple_var_resolver.insert("env.JU_VENDOR_ID", self.vendor.id().to_string());
-        simple_var_resolver.insert("env.JU_VENDOR_NAME", self.vendor.name().to_string());
+        simple_var_resolver.insert(ENV_JU_OS, env::consts::OS);
+        simple_var_resolver.insert(ENV_JU_TYPE, self.config.package_type.clone());
+        simple_var_resolver.insert(ENV_JU_VENDOR_ID, self.vendor.id().to_string());
+        simple_var_resolver.insert(ENV_JU_VENDOR_NAME, self.vendor.name().to_string());
         let env_var_resolver = PrefixedVarResolver::new("env.", Rc::new(OsEnvVarResolver));
         let var_resolvers: Vec<Rc<dyn VarResolver>> = vec![Rc::new(simple_var_resolver), Rc::new(env_var_resolver)];
         let var_expander = VarExpander::new(var_resolvers);
@@ -296,16 +326,22 @@ impl Installation {
             // setup command
             let mut command = command.clone();
             command.kind(NotifyKind::Success);
-            command.env("JU_ARCH", &self.config.architecture);
-            command.env("JU_CONFIG_VERSION", &self.config.version);
-            command.env("JU_DIRECTORY", &path);
-            command.env("JU_NEW_VERSION", &new.to_string());
+            command.env(ENV_JU_ARCH, env::consts::ARCH);
+            command.env(ENV_JU_CONFIG_ARCH, &self.config.architecture);
+            command.env(ENV_JU_CONFIG_DIRECTORY, &self.config.directory);
+            command.env(ENV_JU_CONFIG_TYPE, &self.config.package_type);
+            command.env(ENV_JU_CONFIG_VENDOR, &self.config.vendor);
+            command.env(ENV_JU_CONFIG_VERSION, &self.config.version);
+            command.env(ENV_JU_DIRECTORY, &path);
+            command.env(ENV_JU_FAMILY, env::consts::FAMILY);
+            command.env(ENV_JU_NEW_VERSION, &new.to_string());
             if let Some(old) = old {
-                command.env("JU_OLD_VERSION", &old.to_string());
+                command.env(ENV_JU_OLD_VERSION, &old.to_string());
             }
-            command.env("JU_TYPE", &self.config.package_type);
-            command.env("JU_VENDOR_ID", self.vendor.id());
-            command.env("JU_VENDOR_NAME", self.vendor.name());
+            command.env(ENV_JU_OS, env::consts::OS);
+            command.env(ENV_JU_TYPE, &self.config.package_type);
+            command.env(ENV_JU_VENDOR_ID, self.vendor.id());
+            command.env(ENV_JU_VENDOR_NAME, self.vendor.name());
 
             // execute command
             trace!(?command, "executing on-update command");

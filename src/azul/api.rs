@@ -129,10 +129,12 @@ impl MetadataRequest {
     fn arch(&self) -> String {
         let arch = self.arch.trim();
 
-        if arch.is_empty() {
-            env::consts::ARCH.to_lowercase()
-        } else {
-            arch.to_lowercase()
+        let arch = if arch.is_empty() { env::consts::ARCH } else { arch };
+
+        match arch.to_lowercase().as_str() {
+            "amd64" | "x86_64" => "x64".to_string(),
+            "x86" => "i686".to_string(),
+            arch => arch.to_string(),
         }
     }
 
@@ -175,6 +177,18 @@ mod tests {
 
     use super::*;
     use test_log::test;
+
+    #[cfg(windows)]
+    #[test]
+    fn test_normalize_x86_64_architecture() {
+        let request = MetadataRequest {
+            arch: "x86_64".to_string(),
+            os: "windows".to_string(),
+            package_type: "jdk".to_string(),
+            version: "17".to_string(),
+        };
+        assert_eq!("x64", request.arch());
+    }
 
     #[cfg(windows)]
     #[test]
