@@ -34,7 +34,7 @@ impl MetadataRequest {
         let Some(response) = response.as_array() else {
             return Err(anyhow!("response has not the expected structure"));
         };
-        let arch = self.arch(); // Get the normalized architecture string
+        let arch = self.arch();
         let response = response
             .iter()
             .find(|r| {
@@ -97,17 +97,10 @@ impl MetadataRequest {
     // Returns the requested architecture for the package, normalized for the API.
     fn arch(&self) -> String {
         let arch = self.arch.trim();
-        let arch = if arch.is_empty() {
+        if arch.is_empty() {
             env::consts::ARCH.to_lowercase()
         } else {
             arch.to_lowercase()
-        };
-
-        match arch.as_str() {
-            "aarch64" | "arm64" => "aarch64".to_string(),
-            "x64" | "x86_64" | "amd64" => "x64".to_string(),
-            "x86" | "i386" | "i686" => "x32".to_string(), // Map x86 to x32 for Eclipse API
-            other => other.to_string(),
         }
     }
 
@@ -152,15 +145,15 @@ mod tests {
     use test_log::test;
 
     #[test]
-    fn test_query_x86_architecture() {
+    fn test_query_x32_architecture() {
         let request = MetadataRequest {
-            arch: "x86".to_string(),
+            arch: "x32".to_string(),
             os: "windows".to_string(),
             package_type: "jdk".to_string(),
             version: "17".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 
     #[test]
@@ -169,33 +162,21 @@ mod tests {
             arch: "x64".to_string(),
             os: "windows".to_string(),
             package_type: "jdk".to_string(),
-            version: "17".to_string(),
+            version: "25".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 
     #[test]
     fn test_query_aarch64_architecture() {
         let request = MetadataRequest {
             arch: "aarch64".to_string(),
-            os: "linux".to_string(), // Using linux as a common target for aarch64
-            package_type: "jdk".to_string(),
-            version: "17".to_string(),
-        };
-        let result = request.query();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_query_arm64_architecture() {
-        let request = MetadataRequest {
-            arch: "arm64".to_string(), // 'arm64' should also normalize to 'aarch64'
             os: "linux".to_string(),
             package_type: "jdk".to_string(),
             version: "17".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 }

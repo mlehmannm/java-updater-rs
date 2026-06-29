@@ -10,7 +10,7 @@ publish = false
 readme = "readme.md"
 repository = "https://github.com/mlehmannm/java-updater-rs.git"
 # keep in sync with .github/workflows/release.yml
-rust-version = "1.90.0"
+rust-version = "1.96.0"
 version = "0.5.0-dev"
 
 [[bin]]
@@ -61,7 +61,7 @@ tar = "0.4"
 zip = "8"
 
 [build-dependencies]
-vergen-git2 = { version = "9", features = ["build", "emit_and_set", "rustc"] }
+vergen-git2 = { version = "10", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
 windows-registry = "0.6"

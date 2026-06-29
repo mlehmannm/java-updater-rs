@@ -26,6 +26,7 @@ impl MetadataRequest {
     // Query the Metadata API for the package that fulfills the parameter.
     fn query_packages(&self) -> anyhow::Result<(Version, String, String)> {
         let url = self.packages_query_url()?;
+        trace!(url = url.as_str());
         let client = reqwest::blocking::Client::new();
         let response = client
             .get(url) //
@@ -41,12 +42,12 @@ impl MetadataRequest {
         let Some(response) = response.as_array() else {
             return Err(anyhow!("response has not the expected structure"));
         };
-        let arch = self.arch(); // Get the normalized architecture string
+        let arch = self.arch();
         let response = response
             .iter()
             .find(|r| {
                 let name = r["name"].as_str().unwrap_or_default();
-                name.contains(&format!("win_{arch}"))
+                name.contains(&format!("{arch}.{ARCHIVE_TYPE}"))
             })
             .ok_or_else(|| anyhow!("no package found for architecture {arch}"))?;
 
@@ -127,19 +128,14 @@ impl MetadataRequest {
     // Returns the requested architecture for the package, normalized for the API.
     fn arch(&self) -> String {
         let arch = self.arch.trim();
-        let arch = if arch.is_empty() {
+
+        if arch.is_empty() {
             env::consts::ARCH.to_lowercase()
         } else {
             arch.to_lowercase()
-        };
-
-        match arch.as_str() {
-            "aarch64" | "arm64" => "aarch64".to_string(),
-            "x64" | "x86_64" | "amd64" => "x64".to_string(),
-            "x86" | "i386" | "i686" => "i686".to_string(),
-            _ => arch,
         }
     }
+
     // Returns the requested operating system for the package.
     fn os(&self) -> String {
         let os = self.os.trim();
@@ -180,6 +176,7 @@ mod tests {
     use super::*;
     use test_log::test;
 
+    #[cfg(windows)]
     #[test]
     fn test_query_i686_architecture() {
         let request = MetadataRequest {
@@ -188,19 +185,33 @@ mod tests {
             package_type: "jdk".to_string(),
             version: "17".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_query_x64_architecture() {
         let request = MetadataRequest {
             arch: "x64".to_string(),
             os: "windows".to_string(),
             package_type: "jdk".to_string(),
-            version: "17".to_string(),
+            version: "25".to_string(),
         };
-        let result = request.query();
-        assert!(result.is_ok());
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn test_query_aarch64_architecture() {
+        let request = MetadataRequest {
+            arch: "aarch64".to_string(),
+            os: "linux".to_string(), // Using linux as a common target for aarch64
+            package_type: "jdk".to_string(),
+            version: "17".to_string(), // TODO 25 will return two entries
+        };
+        let _result = request.query().expect("Failed to query");
+        // TODO check response
     }
 }
