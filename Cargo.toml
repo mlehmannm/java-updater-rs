@@ -61,7 +61,7 @@ tar = "0.4"
 zip = "8"
 
 [build-dependencies]
-vergen-git2 = { version = "9", features = ["build", "emit_and_set", "rustc"] }
+vergen-git2 = { version = "10", features = ["build", "emit_and_set", "rustc"] }
 
 [target.'cfg(windows)'.build-dependencies]
 windows-registry = "0.6"

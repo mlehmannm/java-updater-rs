@@ -11,7 +11,7 @@ use std::path::Path;
 use std::path::PathBuf;
 #[cfg(windows)]
 use std::process::{Command, Stdio};
-use vergen_git2::{BuildBuilder, Emitter, Git2Builder, RustcBuilder};
+use vergen_git2::{Build, Emitter, Git2, Rustc};
 #[cfg(windows)]
 use windows_registry::LOCAL_MACHINE;
 #[cfg(windows)]
@@ -34,9 +34,9 @@ const MAGICK_EXE: &str = "magick.exe";
 fn main() -> Result<(), Box<dyn Error>> {
     // fetch some version information
     Emitter::default()
-        .add_instructions(&BuildBuilder::all_build()?)?
-        .add_instructions(&Git2Builder::all_git()?)?
-        .add_instructions(&RustcBuilder::all_rustc()?)?
+        .add_instructions(&Build::all_build())?
+        .add_instructions(&Git2::all().dirty(false).sha(true).build())?
+        .add_instructions(&Rustc::all_rustc())?
         .emit_and_set()?;
 
     // customise the executable (windows only)
@@ -50,9 +50,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(windows)]
 fn include_windows_resources() -> Result<(), Box<dyn Error>> {
     svg_to_ico(EXE_ICO_SOURCE, EXE_ICO_TARGET)?;
-    let git_describe = std::env::var("VERGEN_GIT_DESCRIBE")?;
-    println!("cargo:warning=build.rs: git_describe={git_describe}");
-    let file_description = format!("Java Updater (git/{git_describe})");
+    let git_dirty = std::env::var("VERGEN_GIT_DIRTY")?;
+    let git_sha = std::env::var("VERGEN_GIT_SHA")?;
+    let git_dirty_suffix = if git_dirty == "true" { "-dirty" } else { "" };
+    let file_description = format!("Java Updater (git/{git_sha}{git_dirty_suffix})");
     WindowsResource::new() //
         .set_icon(EXE_ICO_TARGET) //
         .set_manifest_file(EXE_MANIFEST) //
@@ -61,10 +62,10 @@ fn include_windows_resources() -> Result<(), Box<dyn Error>> {
         .compile()?;
 
     // don't rebuild when nothing changed
-    println!("cargo:rerun-if-changed={RES_TARGET}");
     println!("cargo:rerun-if-changed={EXE_ICO_SOURCE}");
     println!("cargo:rerun-if-changed={EXE_ICO_TARGET}");
     println!("cargo:rerun-if-changed={EXE_MANIFEST}");
+    println!("cargo:rerun-if-changed={RES_TARGET}");
 
     Ok(())
 }
