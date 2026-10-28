@@ -230,7 +230,8 @@ impl Package {
         for i in 0..zip.len() {
             let mut file = zip.by_index(i)?;
             let Some(name) = file.enclosed_name() else {
-                warn!(name = file.name(), "skipping dangerous name");
+                // ZIP names can fail to decode; retain that error in the warning while skipping the entry.
+                warn!(name = ?file.name(), "skipping dangerous name");
                 continue;
             };
 
